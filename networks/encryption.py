@@ -1,7 +1,18 @@
-import os
+from Crypto.PublicKey import RSA
+from Crypto.Cipher import PKCS1_OAEP
 
 def encrypt(key, message):
-    return bytes([message[i] ^ key[i] for i in range(len(message))])
-decrypt = encrypt
+    publickey = RSA.import_key(key)
+    cipher = PKCS1_OAEP.new(publickey)
+    return cipher.encrypt(message)
+
+
+def decrypt(key, message):
+    cipher = PKCS1_OAEP.new(key)
+    return cipher.decrypt(message)
+
+
 def create_key():
-    return os.urandom(256)
+    key = RSA.generate(4096, e=503223)
+    public = key.publickey().export_key()
+    return key, public

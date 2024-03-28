@@ -5,12 +5,12 @@ import threading
 from encryption import encrypt, decrypt, create_key
 
 class Messager:
-    def __init__(self, addr, mask, port=9613):
+    def __init__(self, addr, mask, port=9613, me=None):
         self.peers = {}
         self.me = None
         self.hello = b'Imma here!'
         self.req = b'Gimme dat!'
-        self.key = create_key()
+        self.key, self.pkey = create_key()
         self.port = port
         self.bcast = '.'.join(list(map(str, [int(a) | (255 ^ int(m)) for a, m in zip(addr.split('.'), mask.split('.'))])))
     
@@ -19,7 +19,7 @@ class Messager:
         while True:
             s = socket(AF_INET, SOCK_DGRAM)
             s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)   
-            s.sendto(self.hello + self.key, (self.bcast, self.port))
+            s.sendto(self.hello + self.pkey, (self.bcast, self.port))
             s.close()
             time.sleep(1)
 
@@ -44,7 +44,7 @@ class Messager:
             s.bind((self.bcast, self.port))
             data, addr = s.recvfrom(1024)
             if data[:10] == self.hello and addr[0] != self.me:
-                if data[10:] == self.key:
+                if data[10:] == self.pkey:
                     self.me = addr[0]
                     print(f"I am existing as {self.me}")
                 else:
