@@ -26,8 +26,8 @@ class FileIndexer:
                 'size': os.path.getsize(file_path)
             }
 
-# Usage
-shared_folder = r'C:\FileTransfers'  # Directory path, not a single file
+
+shared_folder = r'C:\FileTransfers'  
 file_indexer = FileIndexer(shared_folder)
 file_indexer.index_files()
 
