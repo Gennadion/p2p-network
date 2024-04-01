@@ -1,9 +1,12 @@
 import os
 import hashlib
+import json
 
 class FileIndexer:
-    def __init__(self, shared_folder):
+    def __init__(self, shared_folder, index_file_name='index.json'):
         self.shared_folder = shared_folder
+        # Set the path to the index file in the same directory as the script
+        self.index_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), index_file_name)
         self.file_hashes = {}
 
     def generate_file_hash(self, file_path):
@@ -25,11 +28,15 @@ class FileIndexer:
                 'path': file_path,
                 'size': os.path.getsize(file_path)
             }
+        self.save_index_to_json()
 
-
-shared_folder = r'C:\FileTransfers'  
-file_indexer = FileIndexer(shared_folder)
-file_indexer.index_files()
-
-for file_hash, metadata in file_indexer.file_hashes.items():
-    print(f"{file_hash}: {metadata}")
+    def save_index_to_json(self):
+        """Save the file index to a JSON file."""
+        with open(self.index_file, 'w') as f:
+            json.dump(self.file_hashes, f, indent=4)
+    
+if __name__ == "__main__":
+    shared_folder = r'C:\FileTransfers'  
+    file_indexer = FileIndexer(shared_folder)
+    file_indexer.index_files()
+    print(f"Indexing complete. Data saved in {file_indexer.index_files}.")
