@@ -6,7 +6,7 @@ class FileIndexer:
         self.shared_folder = shared_folder
         self.file_hashes = {}
 
-    def generate_file_hash(self, file_path):  # Take a file_path as argument
+    def generate_file_hash(self, file_path):
         hasher = hashlib.sha256()
         with open(file_path, 'rb') as file:  # Open the file to read in binary mode
             while True:
@@ -15,8 +15,21 @@ class FileIndexer:
                     break
                 hasher.update(chunk)
         return hasher.hexdigest()
+    
+    def index_files(self):
+        for filename in os.listdir(self.shared_folder):
+            file_path = os.path.join(self.shared_folder, filename) 
+            file_hash = self.generate_file_hash(file_path)
+            self.file_hashes[file_hash] = {
+                'name': filename,
+                'path': file_path,
+                'size': os.path.getsize(file_path)
+            }
 
 # Usage
-file_path = r'C:\FileTransfers\ethernet-wireshark-trace1.pcapng' 
-file_indexer = FileIndexer(file_path)  
-print(file_indexer.generate_file_hash(file_path))
+shared_folder = r'C:\FileTransfers'  # Directory path, not a single file
+file_indexer = FileIndexer(shared_folder)
+file_indexer.index_files()
+
+for file_hash, metadata in file_indexer.file_hashes.items():
+    print(f"{file_hash}: {metadata}")
