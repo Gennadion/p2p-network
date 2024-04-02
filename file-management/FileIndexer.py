@@ -1,6 +1,8 @@
 import os
 import hashlib
 import json
+import time
+from Overwatcher import DirectoryMonitor
 
 class FileIndexer:
     def __init__(self, shared_folder, index_file_name='index.json'):
@@ -51,14 +53,6 @@ class FileIndexer:
             self.save_index_to_json()
 
 
-    def delete_index_from_json(self, file_path):
-        if os.path.isfile(file_path):
-            file_hash = self.generate_file_hash(file_path)
-            if file_hash in self.file_hashes:
-                del self.file_hashes[file_hash]
-                self.save_index_to_json()
-
-
     def delete_index(self):
         if os.path.exists(self.index_file):
             os.remove(self.index_file)
@@ -67,6 +61,17 @@ class FileIndexer:
 
 if __name__ == "__main__":
     shared_folder = r'C:\FileTransfers'  
-    file_indexer = FileIndexer(shared_folder)
+    shared_folder_mac = r'/Users/finik/Desktop/FilesToTransfer'
+    file_indexer = FileIndexer(shared_folder_mac)
     file_indexer.index_files()
     print(f"Indexing complete. Data saved in {file_indexer.index_files}.")
+    time.sleep(5)
+    monitor = DirectoryMonitor(shared_folder_mac, file_indexer)
+    monitor.start()
+
+    try:
+        while True:
+            # Keep the program running to monitor directory changes
+            pass 
+    except KeyboardInterrupt:
+        monitor.stop()
