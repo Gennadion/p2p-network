@@ -52,6 +52,22 @@ class FileIndexer:
             }
             self.save_index_to_json()
 
+    def delete_index_from_json(self, file_path):
+            # Assume filename is enough to identify the file in your index
+        filename = os.path.basename(file_path)
+        
+        # Find the hash corresponding to this filename
+        file_hash = None
+        for file_hash, meta_data in self.file_hashes.items():
+            if meta_data['name'] == filename:
+                file_hash = file_hash
+                break
+        
+        # If the hash was found, delete the entry
+        if file_hash and file_hash in self.file_hashes:
+            del self.file_hashes[file_hash]
+            self.save_index_to_json()
+
 
     def delete_index(self):
         if os.path.exists(self.index_file):
