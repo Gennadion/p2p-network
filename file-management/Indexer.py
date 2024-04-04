@@ -69,8 +69,8 @@ class LocalIndexManger:
 
 class PeerIndexManager:
     def __init__(self, peer_index_file_name='peer_index.json'):
-        self.index_file = peer_index_file_name
-        self.peer_file_index = self.load_peer_index()
+        self.index_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), peer_index_file_name)
+        self.file_indexes = {}
 
     def load_peer_index(self):
         try:
@@ -80,8 +80,8 @@ class PeerIndexManager:
                 return {}
 
     def save_peer_index(self):
-            with open(self.peer_index_file, 'w') as file:
-                json.dump(self.peer_file_index, file, indent=4)
+        with open(self.index_file, 'w') as file:
+            json.dump(self.file_indexes, file, indent=4)
 
     def add_file_from_peer_index(self, file_hash, file_metadata, peer_address):
         """Add a new file to the index or update existing file metadata."""
@@ -113,6 +113,8 @@ class PeerIndexManager:
 if __name__ == "__main__":
     shared_folder_mac = r'/Users/finik/Desktop/FilesToTransfer'
     file_indexer = LocalIndexManger(shared_folder_mac)
+    peer_file_indexer = PeerIndexManager()
+    peer_file_indexer.save_peer_index()
     file_indexer.index_files()
     print(f"Indexing complete. Data saved in {file_indexer.index_files}.")
     time.sleep(5)
