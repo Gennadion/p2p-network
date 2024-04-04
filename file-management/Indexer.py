@@ -71,6 +71,7 @@ class LocalIndexManger:
 class PeerIndexManager:
     def __init__(self, peer_index_file_name='peer_index.json'):
         self.index_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), peer_index_file_name)
+        self.peer_file_index = self.load_peer_index()
         self.file_indexes = {}
 
     def load_peer_index(self):
@@ -84,7 +85,7 @@ class PeerIndexManager:
         with open(self.index_file, 'w') as f:
             json.dump(self.file_indexes, f, indent=4)
 
-    def add_file_from_peer_index(self, file_hash, file_metadata, peer_address):
+    def add_file_index(self, file_hash, file_metadata, peer_address):
         """Add a new file to the index or update existing file metadata."""
         if file_hash not in self.peer_file_index:
             self.peer_file_index[file_hash] = {
@@ -96,20 +97,24 @@ class PeerIndexManager:
         }
         self.save_peer_index()
 
-    def remove_file_from_peer_index(self, file_hash, peer_address):
+    def remove_file_index(self, file_hash, peer_address):
         if file_hash in self.peer_file_index:
             if peer_address in self.peer_file_index[file_hash]["peers"]:
                 del self.peer_file_index[file_hash]["peers"][peer_address]
                 if not self.peer_file_index[file_hash]["peers"]:
                     del self.peer_file_index[file_hash]
                 self.save_peer_index()
+            else:
+                print(f"Peer {peer_address} not found in file index.")
+        else:
+            print(f"File with hash {file_hash} not found in peer index.")
                 
     def get_file_peers(self, file_hash):
         """Get the peers that have the file with the given hash."""
         return self.peer_file_index[file_hash]["peers"] #return the dictionary of peers with last update time
 
-    def list_available_files(self):
-        return [self.peer_file_index[file_hash]["metadata"]["name"] for file_hash in self.file_indexes]
+    def list_available_files(self): 
+        return [self.peer_file_index[file_hash]["metadata"]["name"] for file_hash in self.file_indexes] #return a list of available files
 
 if __name__ == "__main__":
     shared_folder_mac = r'/Users/finik/Desktop/FilesToTransfer'

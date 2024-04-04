@@ -33,16 +33,14 @@ class FileManager:
         self.messenger.broadcast_update(update_message)
 
     def process_peer_update(self, update_message):
-        
+
         """Process a file update message from a peer."""
         action = update_message['action']
         file_hash = update_message['file_hash']
         peer_address = update_message['peer_address']  # Assuming this is included in the message
-
-        if update_message.get('metadata'):
-            file_metadata = update_message['metadata']
+        
         if action == 'add':
             file_metadata = update_message['metadata']
-            self.peer_indexer.add_file(file_hash, file_metadata, peer_address)
+            self.peer_indexer.add_file_index(file_hash, file_metadata, peer_address)
         elif action == 'remove':
-            self.peer_indexer.remove_file(file_hash, peer_address)
+            self.peer_indexer.remove_file_index(file_hash, peer_address)
