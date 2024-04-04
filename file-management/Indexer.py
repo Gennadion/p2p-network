@@ -50,6 +50,7 @@ class LocalIndexManger:
                 'size': os.path.getsize(file_path)
             }
             self.save_index_to_json()
+            return file_hash
 
     def delete_index_from_json(self, file_path):
         filename = os.path.basename(file_path)
@@ -63,7 +64,7 @@ class LocalIndexManger:
         if file_hash and file_hash in self.file_hashes:
             del self.file_hashes[file_hash_to_delete]
             self.save_index_to_json()
-
+            return file_hash_to_delete
     def get_index(self):
         return self.file_hashes
 
@@ -80,8 +81,8 @@ class PeerIndexManager:
                 return {}
 
     def save_peer_index(self):
-        with open(self.index_file, 'w') as file:
-            json.dump(self.file_indexes, file, indent=4)
+        with open(self.index_file, 'w') as f:
+            json.dump(self.file_indexes, f, indent=4)
 
     def add_file_from_peer_index(self, file_hash, file_metadata, peer_address):
         """Add a new file to the index or update existing file metadata."""
@@ -108,7 +109,7 @@ class PeerIndexManager:
         return self.peer_file_index[file_hash]["peers"] #return the dictionary of peers with last update time
 
     def list_available_files(self):
-        return [self.peer_file_index[file_hash]["metadata"]["name"] for file_hash in self.peer_file_index]
+        return [self.peer_file_index[file_hash]["metadata"]["name"] for file_hash in self.file_indexes]
 
 if __name__ == "__main__":
     shared_folder_mac = r'/Users/finik/Desktop/FilesToTransfer'
