@@ -1,5 +1,5 @@
-from interaction import Messager
+from peer import Peer
 
-messager = Messager("10.203.0.0", "255.255.0.0")
+peer = Peer("10.203.0.0", "255.255.0.0")
 
-messager.start()
+peer.start()
