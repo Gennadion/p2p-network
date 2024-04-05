@@ -17,11 +17,13 @@ class Messager:
         s.sendto(message, (self.bcast, self.port))
         s.close()
 
-    def request(self, key, addr, request):
-        s = socket(AF_INET, SOCK_DGRAM)
+    def send(self, key, addr, message):
+        s = socket(AF_INET, SOCK_STREAM)
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        enc = encrypt(key, request)
-        s.sendto(enc, (addr, self.port))
+        enc = encrypt(key, message)
+        s.connect((addr, self.port))
+        for i in range(len(enc) // 1024):
+            s.send(enc[i:i + 1024])
         s.close()
 
     def record(self):
@@ -35,10 +37,16 @@ class Messager:
 
     def receive(self):
         if self.me:
-            s = socket(AF_INET, SOCK_DGRAM)
+            s = socket(AF_INET, SOCK_STREAM)
             s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             s.bind((self.me, self.port))
-            data, addr = s.recvfrom(32768)
+            s.listen()
+            conn, addr = s.accept()
+            data = []
+            batch = conn.recvfrom(1024)
+            while batch:
+                data += batch
+                batch = conn.recvfrom(1024)
             message = decrypt(self.key, data)
             s.close()
             return message, addr
