@@ -20,10 +20,9 @@ class Messager:
     def send(self, key, addr, message):
         s = socket(AF_INET, SOCK_STREAM)
         s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        enc = encrypt(key, message)
         s.connect((addr, self.port))
-        for i in range(len(enc) // 1024):
-            s.send(enc[i:i + 1024])
+        for i in range((len(message) + 1023)// 1024):
+            s.send(message[i:i + 1024])
         s.close()
 
     def record(self):
@@ -36,17 +35,17 @@ class Messager:
         return data, addr
 
     def receive(self):
-        if self.me:
-            s = socket(AF_INET, SOCK_STREAM)
-            s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            s.bind((self.me, self.port))
-            s.listen()
-            conn, addr = s.accept()
-            data = []
-            batch = conn.recvfrom(1024)
-            while batch:
-                data += batch
-                batch = conn.recvfrom(1024)
-            message = decrypt(self.key, data)
-            s.close()
-            return message, addr
+        s = socket(AF_INET, SOCK_STREAM)
+        s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        s.bind((self.me, self.port))
+        s.listen()
+        conn, addr = s.accept()
+        data = []
+        batch = conn.recv(1024)
+        data.append(batch)
+        while batch:
+            batch = conn.recv(1024)
+            data.append(batch)
+        message = b''.join(data)
+        s.close()
+        return message, addr

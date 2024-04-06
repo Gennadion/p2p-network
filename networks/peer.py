@@ -56,15 +56,16 @@ class Peer:
 
     def get_request(self):
         while True:
-            data, addr = self.messager.receive()
-            if data[:10] == self.req:
-                if addr[0] in self.peers:
-                    # this part should be connected somehow to file transferring
-                    print(f"request {data[10:].decode('utf-8')} from {addr[0]}")
-            if data[:10] == self.resp:
-                if addr[0] in self.peers:
-                    # this part should be connected somehow to file transferring
-                    print(f"response {data[10:].decode('utf-8')} from {addr[0]}")
+            if self.messager.me:
+                data, addr = self.messager.receive()
+                if data[:10] == self.req:
+                    if addr[0] in self.peers:
+                        # this part should be connected somehow to file transferring
+                        print(f"request {data[10:].decode('utf-8')} from {addr[0]}")
+                if data[:10] == self.resp:
+                    if addr[0] in self.peers:
+                        # this part should be connected somehow to file transferring
+                        print(f"response {data[10:].decode('utf-8')} from {addr[0]}")
 
     def send_request(self, peer_addr, request):
         if peer_addr in self.peers:
@@ -79,7 +80,7 @@ class Peer:
             for peer in self.peers:
                 if time.time() - self.peers[peer]["last_online"] > 60:
                     del self.peers[peer]
-            time.sleep(60)
+            time.sleep(20)
 
     def start(self):
         interactions = [
@@ -87,7 +88,8 @@ class Peer:
             self.discover_peers,
             self.alert_files,
             self.get_request,
-            self.kill_timeouts
+            self.kill_timeouts,
+            self.print_peers
         ]
         for action in interactions:
             action_thread = threading.Thread(target=action)
