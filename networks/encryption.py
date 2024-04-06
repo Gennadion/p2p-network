@@ -1,6 +1,7 @@
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import PKCS1_OAEP
 
+
 def encrypt(key, message):
     publickey = RSA.import_key(key)
     cipher = PKCS1_OAEP.new(publickey)
