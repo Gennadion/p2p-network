@@ -2,7 +2,7 @@ import os
 import hashlib
 import json
 import time
-from Overwatcher import DirectoryMonitor
+from file_management.Overwatcher import DirectoryMonitor
 
 class FileIndexer:
     def __init__(self, shared_folder, index_file_name='index.json'):
@@ -62,11 +62,12 @@ class FileIndexer:
 if __name__ == "__main__":
     shared_folder = r'C:\FileTransfers'  
     shared_folder_mac = r'/Users/finik/Desktop/FilesToTransfer'
-    file_indexer = FileIndexer(shared_folder_mac)
+    shared_folder_win = r'C:\Users\Genn\Desktop\shared_files'
+    file_indexer = FileIndexer(shared_folder_win)
     file_indexer.index_files()
     print(f"Indexing complete. Data saved in {file_indexer.index_files}.")
     time.sleep(5)
-    monitor = DirectoryMonitor(shared_folder_mac, file_indexer)
+    monitor = DirectoryMonitor(shared_folder_win, file_indexer)
     monitor.start()
 
     try:
