@@ -3,111 +3,109 @@
 {% block title %} Home | My Website {% endblock %}
 
 {% block content %}
-<h1></h1>
-<p></p>
-
-<div class="row w-100 p-0 m-0">
+<div class="row mt-3 p-0 m-0">
     <!-- FILES SECTION START-->
-    <div class="col-6 ">
-        <nav class="" style="height: 40px;">
-            <div class="container-fluid p-0 d-flex justify-content-between align-items-center">
+    <div class="col-md-7">
+        <nav class="navbar navbar-light rounded-top border border-bottom-0">
+            <div class="container-fluid">
                 <ul class="nav nav-tabs w-50">
-                    <li class="nav-item" style="width: 50%;">
+                    <li class="nav-item">
                         <a class="nav-link active" data-bs-toggle="tab" href="#tab1">Network Files</a>
                     </li>
-                    <li class="nav-item" style="width: 50%;">
+                    <li class="nav-item">
                         <a class="nav-link" data-bs-toggle="tab" href="#tab2">My Files</a>
                     </li>
                 </ul>
-                <div class="m-0 p-0">
-                    <div class="container-input">
-                        <input type="text" placeholder="Search" name="text" class="input-s lg">
-                        <svg fill="#000000" width="20px" height="20px" viewBox="0 0 1920 1920"
-                             xmlns="http://www.w3.org/2000/svg">
-                            <path d="M790.588 1468.235c-373.722 0-677.647-303.924-677.647-677.647 0-373.722 303.925-677.647 677.647-677.647 373.723 0 677.647 303.925 677.647 677.647 0 373.723-303.924 677.647-677.647 677.647Zm596.781-160.715c120.396-138.692 193.807-319.285 193.807-516.932C1581.176 354.748 1226.428 0 790.588 0S0 354.748 0 790.588s354.748 790.588 790.588 790.588c197.647 0 378.24-73.411 516.932-193.807l516.028 516.142 79.963-79.963-516.142-516.028Z"
-                                  fill-rule="evenodd"></path>
-                        </svg>
-                    </div>
-
+                <div class="d-flex">
+                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
                 </div>
             </div>
         </nav>
 
-        <div class="tab-content  mt-1 p-4"
-             style="border: 1px solid #aaa; border-radius: 1.25rem; overflow: hidden; height:85vh;">
+        <div class="tab-content mt-2 p-4 ">
             <div class="tab-pane fade show active" id="tab1">
-                <h3>Tab 1 Content</h3>
-                <p>This is the content of Tab 1.</p>
+                <h3>Network files</h3>
+                <p>All files available on p2p network.</p>
+                <div id="network-content" class="scrollable-content">
+                    <ul class="list-group overflow-auto" style="height:50vh;">
+                        {% for net_file in net_files %}
+                        {% include 'base/netfile_list_item.html' with file_name=net_file %}
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
             <div class="tab-pane fade" id="tab2">
-                <h3>Tab 2 Content</h3>
-                <p>This is the content of Tab 2.</p>
+                <h3>My files</h3>
+                <p>Locally available files. You can share them with others.</p>
+                <div id="my-content" class="scrollable-content">
+                    <ul class="list-group  overflow-auto" style="height:50vh;">
+                        {% for my_file in my_files %}
+                        {% include 'base/userfile_list_item.html' with file_name=my_file %}
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
     <!-- FILES SECTION END-->
 
-   <div class="col-4 ms-5">
+    <!--  PERSONAL SECTION START  -->
+    <div class="col-md-5">
+        <div class="mb-5">
+            <div class="p-4 border rounded">
+                <button type="button" class="btn btn-sm btn-primary float-end" value="Refresh" title="Refresh"><i class="bi bi-arrow-clockwise"></i></button>
+                <h3>Active Peers</h3>
+                <p>This is the list of accessible peers on the network.</p>
+                <div id="peers-content" class="scrollable-content">
+                    <ul class="list-group  overflow-auto" style="height:20vh;">
+                        {% for peer in peers %}
+                        {% include 'base/peer_list_item.html' with peer_name=peer %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
 
-    <div class="">
-
-
-        <nav class="" style="height: 40px;">
-            <div class="container-fluid p-0 d-flex justify-content-between align-items-center">
+        <nav class="navbar navbar-light rounded-top border border-bottom-0">
+            <div class="container-fluid">
                 <ul class="nav nav-tabs w-50">
-                    <li class="nav-item" style="width: 50%;">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#tab1">Sharing</a>
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#share-tab">Sharing</a>
                     </li>
-                    <li class="nav-item" style="width: 50%;">
-                        <a class="nav-link" data-bs-toggle="tab" href="#tab2">Downloading</a>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#download-tab">Downloading</a>
                     </li>
                 </ul>
-                <div class="m-0 p-0">
-                    <div class="container-input">
-                        <input type="text" placeholder="Search" name="text" class="input-s sm">
-                        <svg fill="#000000" width="20px" height="20px" viewBox="0 0 1920 1920"
-                             xmlns="http://www.w3.org/2000/svg">
-                            <path d="M790.588 1468.235c-373.722 0-677.647-303.924-677.647-677.647 0-373.722 303.925-677.647 677.647-677.647 373.723 0 677.647 303.925 677.647 677.647 0 373.723-303.924 677.647-677.647 677.647Zm596.781-160.715c120.396-138.692 193.807-319.285 193.807-516.932C1581.176 354.748 1226.428 0 790.588 0S0 354.748 0 790.588s354.748 790.588 790.588 790.588c197.647 0 378.24-73.411 516.932-193.807l516.028 516.142 79.963-79.963-516.142-516.028Z"
-                                  fill-rule="evenodd"></path>
-                        </svg>
-                    </div>
-
+                <div class="d-flex">
+                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
                 </div>
             </div>
         </nav>
-
-        <div class="tab-content mt-1 p-4"
-             style="border: 1px solid #aaa; border-radius: 1.25rem; overflow: hidden; height:40vh;">
-            <div class="tab-pane fade show active" id="tab1">
-                <h3>Tab 1 Content</h3>
-                <p>This is the content of Tab 1.</p>
+        <div class="tab-content mt-1 p-4">
+            <div class="tab-pane fade show active" id="share-tab">
+                <h3>Share content</h3>
+                <p>Content you are currently sharing via p2p network.</p>
+                <div id="share-content" class="scrollable-content">
+                    <ul class="list-group  overflow-auto" style="height:10vh;">
+                        {% for share_item in share_items %}
+                        <li class="list-group-item">{{ share_item }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
-            <div class="tab-pane fade" id="tab2">
-                <h3>Tab 2 Content</h3>
-                <p>This is the content of Tab 2.</p>
-            </div>
-        </div>
-
-    </div>
-
-               <!-- PEERS SECTION START-->
-    <div class="">
-       <div class="container-fluid p-0 d-flex justify-content-end align-items-center">
-
-       </div>
-
-        <div class=" mt-3 p-4"
-             style="border: 1px solid #aaa; border-radius: 1.25rem; overflow: hidden; height:40vh;">
-             <button type="button" class="button-p  float-end" value="Refresh">
-                Refresh
-            </button>
-            <div class="" id="">
-                <h3>Active Peers</h3>
-                <p>This is the list of accessible peers on the network.</p>
+            <div class="tab-pane fade" id="download-tab">
+                <h3>Download Content</h3>
+                <p>Content you are currently downloading via p2p network.</p>
+                <div id="download-content" class="scrollable-content">
+                    <ul class="list-group">
+                        {% for download_item in download_items %}
+                        <li class="list-group-item">{{ download_item }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
-    <!-- PEERS SECTION END-->
-   </div>
+    <!--  PERSONAL SECTION END  -->
 </div>
 {% endblock %}

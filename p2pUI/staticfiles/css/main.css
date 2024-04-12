@@ -9,7 +9,6 @@
   padding: 10px 0px 10px 40px;
   border-radius: 9999px;
   border: solid 2px #333;
-  width: 150px;
   transition: all .2s ease-in-out;
   outline: none;
   opacity: 0.8;
@@ -31,7 +30,7 @@ width: 340px;
 }
 
 .input-s.sm:focus {
-width: 200px;
+   width: 200px;
   opacity: 1;
    border: 2px solid #86E823;
 }
@@ -53,4 +52,21 @@ width: 200px;
     border: 2px solid #86E823;
     /* Adjust box-shadow for active state */
 
+}
+
+
+
+.preview-list ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.preview-list li {
+    padding: 5px;
+    border-bottom: 1px solid #ccc; /* Add a border between items */
+}
+
+.preview-list li:last-child {
+    border-bottom: none; /* Remove border from last item */
 }
