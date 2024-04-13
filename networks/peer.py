@@ -1,96 +1,119 @@
 import json
 import threading
 import time
-from messager import Messager
-
+import logging
+import socket
 
 class Peer:
-    def __init__(self, addr, mask, port=9613, me=None):
-        self.messager = Messager(addr, mask, port, me)
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    def __init__(self, addr, mask, port=9613, file_manager=None, messager=None):
+        self.logger = logging.getLogger(__name__)
+        logging.info(f"Initializing Peer at {addr} on port {port}")
+        self.messager = messager
         self.files = []
         self.hello = b'Imma here!'
-        self.req = b'Gimme dat!'
-        self.file_alert = b'I have dis'
-        self.resp = b'Sendin dat'
         self.peers = {}
         self.file_batch_size = 64
+        self.file_manager = file_manager
+        self.me = addr
+        self.stop_event = threading.Event()
 
-    def add_file(self, path, hsh, size, name):
-        self.files.append({
-            "path": path,
-            "hsh": hsh,
-            "size": size,
-            "name": name
-        })
+    def listen_for_broadcasts(self):
+        while not self.stop_event.is_set():
+            try:
+                data, addr = self.messager.record()
+                if addr[0] == self.me:
+                    continue  # Skip processing this message
 
-    def alert(self):
-        while True:
-            self.messager.broadcast(self.hello + self.messager.pkey)
-            time.sleep(1)
+                if data[:10] == self.hello and addr[0] != self.me and addr[0] not in self.peers:
+                    new_peer_address = addr[0]
+                    self.peers[new_peer_address] = {"last_online": time.time()}
+                    logging.info(f"Discovered new peer at {new_peer_address}")
+                    self.file_manager.share_index_file_with_new_peer(new_peer_address)
+                elif data[:10] == self.hello and addr[0] in self.peers:
+                    self.peers[addr[0]]["last_online"] = time.time()
+                else:
+                    logging
+                    self.file_manager.handle_received_message(json.loads(data.decode("utf-8")), addr)
+            except socket.timeout:
+                continue
+            except Exception as e:
+                logging.error(f"Error during peer discovery: {e}")
+            finally: 
+                if self.stop_event.is_set():
+                    break
+
+    def listen_for_direct_messages(self):
+        while not self.stop_event.is_set():
+            try:
+                data, addr = self.messager.receive()
+                if data:
+                    self.file_manager.handle_received_message(json.loads(data.decode("utf-8")), addr)
+            except socket.timeout: 
+                continue
+            except Exception as e:
+                logging.error(f"Error receiving direct message: {e}")
+            finally:
+                if self.stop_event.is_set():
+                    break
 
     def discover_peers(self):
-        while True:
-            data, addr = self.messager.record()
-            if data[:10] == self.hello and addr[0] != self.messager.me:
-                if data[10:] == self.messager.pkey:
-                    self.messager.me = addr[0]
-                    print(f"I am existing as {self.messager.me}")
-                    continue
-                self.peers[addr[0]] = {
-                    "key": data[10:],
-                    "files": {},
-                    "last_online": time.time()
-                }
-            if data[:10] == self.file_alert and addr[0] in self.peers:
-                file_batch = json.loads(data[10:].decode("utf-8"))
-                for file in file_batch:
-                    self.peers[addr[0]]["files"][file["hsh"]] = file
+        logging.info("Starting peer discovery...")
+        # Initialize last_broadcast_time to current time minus 30 seconds
+        last_broadcast_time = time.time() 
+        time.sleep(15)  # Adjust sleep time as needed for efficiency
 
-    def alert_files(self):
-        while True:
-            for file_batch in range(len(self.files) // self.file_batch_size):
-                first_i = file_batch * self.file_batch_size
-                last_i = min(file_batch * self.file_batch_size, len(self.files))
-                self.messager.broadcast(self.file_alert + json.dumps(self.files[first_i:last_i]).encode("utf-8"))
-            time.sleep(1)
+        while not self.stop_event.is_set():
+            current_time = time.time()
+            time_since_last_broadcast = current_time - last_broadcast_time
 
-    def get_request(self):
-        while True:
-            if self.messager.me:
-                data, addr = self.messager.receive()
-                if data[:10] == self.req:
-                    if addr[0] in self.peers:
-                        # this part should be connected somehow to file transferring
-                        print(f"request {data[10:].decode('utf-8')} from {addr[0]}")
-                if data[:10] == self.resp:
-                    if addr[0] in self.peers:
-                        # this part should be connected somehow to file transferring
-                        print(f"response {data[10:].decode('utf-8')} from {addr[0]}")
+            # This condition is now true on the first iteration
+            if time_since_last_broadcast >= 15:
+                try:
+                    logging.info("Broadcasting hello message...")
+                    self.messager.broadcast(self.hello)
+                    last_broadcast_time = time.time()
+                except Exception as e:
+                    logging.error(f"Error broadcasting hello message: {e}")
 
-    def send_request(self, peer_addr, request):
-        if peer_addr in self.peers:
-            self.messager.send(self.peers[peer_addr]["key"], peer_addr, self.req + request)
 
-    def send_data(self, peer_addr, response):
-        if peer_addr in self.peers:
-            self.messager.send(self.peers[peer_addr]["key"], peer_addr, self.resp + response)
+    def send_updates(self, message_to_send):
+        logging.info("Sending updates to peers...")
+        for peer in self.peers.keys():
+            try:
+                self.messager.send(peer, message_to_send)
+            except Exception as e:
+                logging.error(f"Error sending updates to {peer}: {e}")
+
+    def send_index(self, peer_address, message_to_send):
+        logging.info(f"Sending index to {peer_address}")
+        try:
+            self.messager.send(peer_address, message_to_send)
+        except Exception as e:
+            logging.error(f"Error sending index to {peer_address}: {e}")
 
     def kill_timeouts(self):
-        while True:
-            for peer in self.peers:
-                if time.time() - self.peers[peer]["last_online"] > 60:
+        logging.info("Monitoring for peer timeouts...")
+        while not self.stop_event.is_set():
+            for peer in list(self.peers):
+                if time.time() - self.peers[peer]["last_online"] > 15:
+                    logging.info(f"Peer {peer} timed out")
+                    self.file_manager.handle_disconnected_peer(peer)
                     del self.peers[peer]
             time.sleep(20)
 
     def start(self):
-        interactions = [
-            self.alert,
-            self.discover_peers,
-            self.alert_files,
-            self.get_request,
-            self.kill_timeouts,
-            self.print_peers
-        ]
+        logging.info("Starting Peer operations")
+        self.threads = []
+        interactions = [self.listen_for_broadcasts, self.discover_peers, self.kill_timeouts, self.listen_for_direct_messages]
+        self.stop_event.clear()
         for action in interactions:
-            action_thread = threading.Thread(target=action)
-            action_thread.start()
+            thread = threading.Thread(target=action, daemon=True)
+            thread.start()
+            self.threads.append(thread)
+    def stop(self):
+        logging.info("Stopping Peer operations")
+        self.stop_event.set()
+        for thread in self.threads:
+            thread.join(timeout=5)  # Ensure all threads have finished
