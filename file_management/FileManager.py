@@ -46,7 +46,6 @@ class FileManager:
         """Share a newly added file index with peers, only including the filename and size in the metadata."""
         try:
             file_hash, file_metadata = self.local_indexer.add_index_to_json(file_path)
-            # Create a filtered metadata dictionary that only includes the filename and size
             filtered_metadata = {
                 "name": file_metadata["name"],
                 "size": file_metadata["size"]

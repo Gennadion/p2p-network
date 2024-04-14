@@ -21,15 +21,13 @@ def main():
 
     peer_index_manager = PeerIndexManager(peer_index_file_name)
     peer_index_manager.load_peer_index()
-
-    # Remove unexpected keyword arguments
+    
     messenger = Messager(addr=local_address, mask=mask, port=port, me=local_address)
 
-    # Initialize FileManager with the necessary objects
     file_manager = FileManager(shared_folder, index_file_name, peer_index_file_name, local_indexer=local_index_manager, peer_indexer=peer_index_manager)
 
     peer = Peer(addr=local_address, mask=mask, port=port, file_manager=file_manager, messager=messenger)
-    file_manager.peer = peer  # Set the peer object in FileManager
+    file_manager.peer = peer  
 
     peer_thread = threading.Thread(target=peer.start, daemon=True)
     peer_thread.start()

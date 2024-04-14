@@ -24,7 +24,7 @@ class Peer:
             try:
                 data, addr = self.messager.record()
                 if addr[0] == self.me:
-                    continue  # Skip processing this message
+                    continue  
 
                 if data[:10] == self.hello and addr[0] != self.me and addr[0] not in self.peers:
                     new_peer_address = addr[0]
@@ -60,15 +60,14 @@ class Peer:
 
     def discover_peers(self):
         logging.info("Starting peer discovery...")
-        # Initialize last_broadcast_time to current time minus 30 seconds
+        
         last_broadcast_time = time.time() 
-        time.sleep(15)  # Adjust sleep time as needed for efficiency
+        time.sleep(15)  
 
         while not self.stop_event.is_set():
             current_time = time.time()
             time_since_last_broadcast = current_time - last_broadcast_time
 
-            # This condition is now true on the first iteration
             if time_since_last_broadcast >= 15:
                 try:
                     logging.info("Broadcasting hello message...")
@@ -116,4 +115,4 @@ class Peer:
         logging.info("Stopping Peer operations")
         self.stop_event.set()
         for thread in self.threads:
-            thread.join(timeout=5)  # Ensure all threads have finished
+            thread.join(timeout=5)  
