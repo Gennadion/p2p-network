@@ -12,7 +12,7 @@
 <link href="{% static '/css/normalize.css' %}" rel="stylesheet" type="text/css">
 <body>
 
-<nav class="navbar navbar-expand-lg navbar-light bg-light">
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
   <div class="container-fluid">
     <a class="navbar-brand ms-3" href="#">P2P Net</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
@@ -22,7 +22,7 @@
     <div class="collapse navbar-collapse justify-content-end me-3" id="navbarNav">
       <ul class="navbar-nav">
         <li class="nav-item">
-          <button class="btn btn-success">Connect</button>
+          <button class="btn btn-sm btn-danger">Disconnect</button>
         </li>
       </ul>
     </div>
@@ -37,3 +37,9 @@
 </div>
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script></html>
+<!-- JQuery -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<!-- Custom  -->
+<script src="{% static '/js/search.js' %}"></script>
+<script src="{% static '/js/reloadFiles.js' %}"></script>
+<script src="{% static '/js/reloadPeers.js' %}"></script>
