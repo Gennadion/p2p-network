@@ -1,4 +1,7 @@
 import asyncio
+import random
+import threading
+import time
 
 from django.shortcuts import render
 from asgiref.sync import sync_to_async
@@ -6,15 +9,60 @@ from asgiref.sync import sync_to_async
 # Create your views here.
 from django.http import HttpResponse, JsonResponse
 
+# Shared data structure to store network files
+network_files = ["File Name 1", "File Name 2"]
+active_peers = ['peer1', 'peer2', 'peer3']
+
+
+# Function to generate random peer names
+def generate_random_peer_name():
+    return f'peer_{random.randint(1, 100)}'
+
+
+# Function to continuously update network files
+def update_network_files():
+    global network_files
+    while True:
+        # Simulate generating new network files
+        new_files = [f"New File {int(network_files[-1].split(' ')[-1]) + 1}"]
+        # Update the shared data structure
+        network_files.extend(new_files)
+        # Sleep for some time
+        time.sleep(10)
+
+
+# Create a separate thread for updating network files
+update_thread = threading.Thread(target=update_network_files)
+update_thread.daemon = True  # Daemonize the thread, so it stops when the main thread exits
+update_thread.start()
+
+
+def update_active_peers():
+    global active_peers
+    while True:
+        # Generate random number of peers (between 1 and 10)
+        num_peers = random.randint(1, 3)
+        # Generate random peer names
+        new_peers = [generate_random_peer_name() for _ in range(num_peers)]
+        # Update the shared data structure
+        active_peers = new_peers
+        # Sleep for some time
+        time.sleep(3)
+
+
+# Create a separate thread for updating active peers
+update_thread = threading.Thread(target=update_active_peers)
+update_thread.daemon = True  # Daemonize the thread, so it stops when the main thread exits
+update_thread.start()
+
 
 # helper funcs
 async def get_network_files_async(request):
     print('prepare to get files on network')
-    await asyncio.sleep(2)
+    # Get the current state of network files (snapshot)
+    current_files = network_files.copy()
+    return JsonResponse({'net_files': current_files})
 
-    net_files = ["File Name 1", "File Name 2", "File Name 3", "File Name 4", "File Name 5", "File Name 6",
-                 "File Name 7", "File Name 8", "File Name 9", "File Name 10", "File Name 11", "File Name 12"]
-    return JsonResponse({'net_files': net_files})
 
 async def get_my_files_async(request):
     print('prepare to get files on localhost')
@@ -23,20 +71,12 @@ async def get_my_files_async(request):
     return JsonResponse({'my_files': my_files})
 
 
-
 async def get_peers_async(request):
     print('prepare to get active peers')
-    await asyncio.sleep(2)
-
-    active_peers = ['peer1', 'peer2', 'peer3']  # Replace with actual data retrieval
-    # active_peers = []  # Replace with actual data retrieval
-    return JsonResponse({'active_peers': active_peers})
+    # Get the current state of active peers (snapshot)
+    current_peers = active_peers.copy()
+    return JsonResponse({'active_peers': current_peers})
 
 
 async def index(request):
-
-
-
-
-
     return render(request, 'base/index.html')

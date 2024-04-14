@@ -3,7 +3,7 @@ function reloadPeers() {
     peersContent.empty(); // Clear previous content
     
     var loader = $('#peer-loader');
-    loader.show(); // Show loader
+//    loader.show(); // Show loader
     
     var info = $('#peers-info');
     info.hide(); // Hide info text
@@ -43,8 +43,11 @@ function reloadPeers() {
         });
 }
 
-$('#reload-peers-btn').on('click', function() {
-    reloadPeers();
-});
+//$('#reload-peers-btn').on('click', function() {
+//    reloadPeers();
+//});
 
+// Initial preload
 reloadPeers();
+
+setInterval(reloadPeers, 5000);
