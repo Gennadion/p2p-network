@@ -41,7 +41,7 @@ def update_active_peers():
     global active_peers
     while True:
         # Generate random number of peers (between 1 and 10)
-        num_peers = random.randint(1, 3)
+        num_peers = random.randint(3, 3)
         # Generate random peer names
         new_peers = [generate_random_peer_name() for _ in range(num_peers)]
         # Update the shared data structure

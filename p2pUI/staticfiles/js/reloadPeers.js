@@ -1,6 +1,6 @@
 function reloadPeers() {
     var peersContent = $('#peers-content');
-    peersContent.empty(); // Clear previous content
+//    peersContent.empty(); // Clear previous content
     
     var loader = $('#peer-loader');
 //    loader.show(); // Show loader
@@ -17,9 +17,10 @@ function reloadPeers() {
         })
         .then(data => {
             console.log(data);
+            peersContent.html('');
             if (data.active_peers.length === 0) {
                 console.log('empty');
-                info.show(); // Show info text
+//                info.show(); // Show info text
             } else {
                 data.active_peers.forEach(peer => {
                     // Create list item for each peer
@@ -36,7 +37,7 @@ function reloadPeers() {
         })
         .catch(error => {
             console.error('Error:', error);
-            info.show(); // Show info text
+//            info.show(); // Show info text
         })
         .finally(() => {
             loader.hide(); // Hide loader

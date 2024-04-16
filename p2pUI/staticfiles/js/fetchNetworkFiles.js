@@ -2,7 +2,7 @@ function fetchNetworkFiles() {
  // Reload network files
     const loader = $('#netfiles-loader');
     const info = $('#netfiles-info');
-    $('#net-content').html('');
+//    $('#net-content').html('');
     info.hide();
 //    loader.show();
     fetch('/get-network-files/')
@@ -10,11 +10,11 @@ function fetchNetworkFiles() {
             if (response.ok) {
                 return response.json();
             }
-            info.show();
+//            info.show();
             throw new Error('Failed to fetch network files');
         })
         .then(data => {
-            loader.hide();
+//            loader.hide();
              console.log(data);
             const netContent = document.getElementById('net-content');
             netContent.innerHTML = ''; // Clear previous content
