@@ -1,4 +1,5 @@
-  function filterListItems() {
+  function searchListItems() {
+        console.log('searching');
         var input, filter, ul, li, span, txtValue;
         input = document.getElementById('search-input');
         filter = input.value.toUpperCase();
@@ -9,13 +10,13 @@
         ul_my = document.getElementById('my-content');
         li_my = ul_my.getElementsByTagName('li');
 
-        searchListItems(li, filter);
-        searchListItems(li_my, filter);
+        filterListItems(li, filter);
+        filterListItems(li_my, filter);
 
 
     }
 
-    function searchListItems(listOfItems, filter) {
+    function filterListItems(listOfItems, filter) {
         for (var i = 0; i < listOfItems.length; i++) {
             span = listOfItems[i].getElementsByClassName('file-name')[0];
             txtValue = span.textContent || span.innerText;
@@ -46,4 +47,4 @@
     }
 
     // Add an event listener to trigger the filter function when the search input changes
-    document.getElementById('search-input').addEventListener('input', filterListItems);
+    document.getElementById('search-input').addEventListener('input', searchListItems);
