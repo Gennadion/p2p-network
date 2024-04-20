@@ -79,4 +79,9 @@ async def get_peers_async(request):
 
 
 async def index(request):
+    await asyncio.sleep(1)
     return render(request, 'base/index.html')
+
+async def index_disconnected(request):
+    await asyncio.sleep(1)
+    return render(request, 'base/index_disconnected.html')
