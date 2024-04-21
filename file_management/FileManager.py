@@ -1,5 +1,6 @@
 import json
 import logging
+import os 
 
 class FileManager:
     logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -10,7 +11,6 @@ class FileManager:
         self.local_indexer = local_indexer
         self.peer_indexer = peer_indexer
         self.peer = peer_object
-        
     def format_message(self, action, data):
         """Format a message with a specified action and data."""
         message = {
@@ -48,6 +48,7 @@ class FileManager:
         """Handle the index file received from a peer."""
         try:
             self.peer_indexer.update_from_received_index(index_file, peer_address)
+            self.refresh()
             logging.info(f"Received and processed index file from peer: {peer_address}")
         except Exception as e:
             logging.error(f"Error processing index file from {peer_address}: {e}")
@@ -85,8 +86,10 @@ class FileManager:
             
             if action == 'add':
                 self.peer_indexer.add_file_index(file_hash, update_message['metadata'], peer_address)
+                self.refresh()
             elif action == 'delete':
                 self.peer_indexer.remove_file_index(file_hash, peer_address)
+                self.refresh()
             logging.info(f"Processed peer update: {action} for file {file_hash}")
         except Exception as e:
             logging.error(f"Error processing peer update: {e}")
@@ -112,3 +115,28 @@ class FileManager:
             logging.info(f"Handled received message from {addr}")
         except Exception as e:
             logging.error(f"Error handling received message from {addr}: {e}")
+
+    def display_terminal(self):
+        print("\n==============================================================================================================================================================\n")
+        for file_hash, file_info in self.peer_indexer.get_peer_index().items():
+            print(f"\n{file_info['metadata']['name']} ({file_info['metadata']['size']} bytes)\nFile hash - {file_hash}")
+            print("Available from peers:")
+            for i, peer in enumerate(list(file_info['peers'].keys()), start=1):
+                print(f"    {i}. {peer}")
+        print("\nType 'refresh' to update this list, or 'exit' to quit.")
+
+
+    def refresh(self):
+        print("Update is detected, refreshing...")
+        self.peer_indexer.load_peer_index()
+        self.display_terminal()
+
+    def terminal_command_loop(file_manager):
+        while True:
+            command = input("Enter command (refresh, ...): ").strip().lower()
+            if command == "refresh":
+                file_manager.refresh()
+            elif command == "exit":
+                break
+            else:
+                print("Unknown command.")    

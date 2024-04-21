@@ -77,6 +77,7 @@ class PeerIndexManager:
         self.peer_file_index = self.load_peer_index()
         self.file_indexes = {}
 
+
     def load_peer_index(self):
         self.logger.info("Loading peer index...")
         try:
@@ -85,7 +86,11 @@ class PeerIndexManager:
         except FileNotFoundError:
             self.logger.warning("Peer index file not found, starting fresh.")
             return {}
-
+        
+    def get_peer_index(self):
+        index_file = self.load_peer_index()
+        return index_file   
+    
     def save_peer_index(self):
         self.logger.info("Saving peer index...")
         with open(self.index_file, 'w') as f:

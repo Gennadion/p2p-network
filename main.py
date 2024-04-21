@@ -35,7 +35,8 @@ def main():
     directory_monitor = DirectoryMonitor(shared_folder, local_index_manager, file_manager)
     directory_monitor_thread = threading.Thread(target=directory_monitor.start, daemon=True)
     directory_monitor_thread.start()
-
+    file_manager.refresh()
+    file_manager.terminal_command_loop()
     try:
         while True:
             pass
