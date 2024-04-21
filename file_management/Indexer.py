@@ -5,7 +5,7 @@ import time
 import logging
 
 class LocalIndexManager:
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     def __init__(self, shared_folder, index_file_name='index.json'):
         self.logger = logging.getLogger(__name__)
         self.logger.info("Initializing LocalIndexManager...")

@@ -2,7 +2,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import logging
 class DirectoryMonitor:
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     def __init__(self, shared_folder, local_indexer, file_manager):
         self.logger = logging.getLogger(__name__)
         logging.info(f"Initializing DirectoryMonitor for {shared_folder}")

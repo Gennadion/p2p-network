@@ -2,7 +2,7 @@ import json
 import logging
 
 class FileManager:
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     def __init__(self, shared_folder, index_file_name='index.json', peer_index_file_name='peer_index.json', peer_object=None, local_indexer=None, peer_indexer=None):
         self.logger = logging.getLogger(__name__)
         logging.info(f"Initializing FileManager for {shared_folder}")
@@ -18,6 +18,16 @@ class FileManager:
             "data": data
         }
         return json.dumps(message)
+
+    def create_update_message(self, action, file_hash, metadata=None):
+        """Create a message to update peers about a file index change."""
+        message = {
+            "action": action,
+            "file_hash": file_hash
+        }
+        if metadata:
+            message["metadata"] = metadata
+        return message
 
     def share_index_file_with_new_peer(self, peer_address):
         """Share the local index file with a new peer in the P2P network, excluding local path information."""
@@ -55,7 +65,6 @@ class FileManager:
             logging.info(f"Shared file index for {file_path} with peers.")
         except Exception as e:
             logging.error(f"Error sharing file index for {file_path}: {e}")
-
 
     def unshare_file_index(self, file_path):
         """Unshare a file index with peers."""
@@ -103,13 +112,3 @@ class FileManager:
             logging.info(f"Handled received message from {addr}")
         except Exception as e:
             logging.error(f"Error handling received message from {addr}: {e}")
-
-    def create_update_message(self, action, file_hash, metadata=None):
-        """Create a message to update peers about a file index change."""
-        message = {
-            "action": action,
-            "file_hash": file_hash
-        }
-        if metadata:
-            message["metadata"] = metadata
-        return message

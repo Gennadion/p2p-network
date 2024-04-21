@@ -5,7 +5,7 @@ import logging
 import socket
 
 class Peer:
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def __init__(self, addr, mask, port=9613, file_manager=None, messager=None):
         self.logger = logging.getLogger(__name__)
