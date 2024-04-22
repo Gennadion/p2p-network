@@ -63,6 +63,11 @@ class LocalIndexManager:
     def get_index(self):
         return self.file_hashes
     
+    def get_file_path(self, filehash):
+        local_file_path = self.file_hashes[filehash]["path"]
+
+        return local_file_path
+    
     def clear_local_index(self):
         self.logger.info("Clearing local index...")
         self.file_hashes = {}
@@ -76,7 +81,6 @@ class PeerIndexManager:
         self.index_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), peer_index_file_name)
         self.peer_file_index = self.load_peer_index()
         self.file_indexes = {}
-
 
     def load_peer_index(self):
         self.logger.info("Loading peer index...")
@@ -150,7 +154,6 @@ class PeerIndexManager:
         self.save_peer_index()
         self.logger.info(f"Disconnected peer {peer_address} removed successfully from peer index.")
 
-    
     def clear_peer_index(self):
         self.logger.info("Clearing peer index...")
         self.index_file = {}

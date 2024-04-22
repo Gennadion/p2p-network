@@ -4,6 +4,7 @@ import os
 import random 
 import time
 import hashlib 
+import base64 
 
 class FileManager:
     logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -115,11 +116,11 @@ class FileManager:
                 print(f"    {i}. {peer}")
         print("\nType 'refresh' to update this list, or 'exit' to quit.")
 
-    def terminal_command_loop(self, file_manager):
+    def terminal_command_loop(self):
         while True:
             command = input("Enter command (refresh, download): ").strip().lower()
             if command == "refresh":
-                file_manager.refresh()
+                self.refresh()
             elif command == "download":
                 self.select_file()
             else:
@@ -165,31 +166,30 @@ class FileManager:
 
     def handle_file_request(self, file_request, peer_address):
         try: 
-            file_hash = file_request["data"]["file_hash"]
-            bit_offset = file_request["data"]["bit_offset"]
-            chunk_size = file_request["data"]["chunk_size"]
-            sequence_number = file_request["data"]["chunk_sequence_number"]
+            file_hash = file_request["file_hash"]
+            bit_offset = file_request["bit_offset"]
+            chunk_size = file_request["chunk_size"]
+            sequence_number = file_request["chunk_sequence_number"]
             file_path = self.local_indexer.get_file_path(file_hash)
             with open(file_path, 'rb') as f:
                 f.seek(bit_offset)
                 chunk = f.read(chunk_size)
-
-            self.peer.send_file_chunk(peer_address, self.format_message("file_chunk", chunk_info = {
+            encoded_chunk = base64.b64encode(chunk).decode("utf-8")
+            self.peer.send_file_chunk(peer_address, self.format_message("file_chunk",{
                 "file_hash": file_hash,
                 "chunk_size": chunk_size,
                 "chunk_sequence_number": sequence_number,
-                "chunk_data": chunk
+                "chunk_data": encoded_chunk
             })) # need to implement this method in peer, takes a peer address, chunk data, file hash and sequence number as arguments
             logging.info(f"Sent file chunk from bit: {bit_offset} to {bit_offset+chunk_size} to address: {peer_address}")
         except Exception as e:
             logging.error(f"Error handling file request: {e}")
 
     def handle_received_chunk(self, data, addr):
-        chunk_info = json.loads(data)
-        chunk_data = chunk_info["data"]["data"]
-        file_hash = chunk_info["data"]["file_hash"]
-        chunk_size = chunk_size["data"]["chunk_size"]
-        chunk_sequence = chunk_info["data"]["chunk_sequence_number"]
+        chunk_data = base64.b64decode(data["chunk_data"].encode("utf-8"))
+        logging.info(f"Received chunk data from {addr}, the content is {chunk_data}")
+        file_hash = data["file_hash"]
+        chunk_sequence = data["chunk_sequence_number"]
 
         if file_hash not in self.temp_file_storage:
             self.temp_file_storage[file_hash] = {}
@@ -198,62 +198,80 @@ class FileManager:
         
     def download_file_chunks(self, file_hash, file_size):
         size = file_size
-        chunk_size = 1024
+        chunk_size = 10000
         num_chunks = (size // chunk_size) + (1 if size % chunk_size != 0 else 0)
         chunks = [None] * num_chunks
-        chunk_attempts = [set() for _ in range(num_chunks)]
+        number_of_attempts = 3
+        chunk_attempts = [{} for _ in range(num_chunks)]
         peers_with_file = self.peer_indexer.get_file_peers(file_hash)
 
-        def request_chunk(i):
-            available_peers = set(peers_with_file.keys()) - chunk_attempts[i]
-            if not available_peers:
-                return False
-            chosen_peer = random.choice(list(available_peers))
-            self.peer.send_file_request(chosen_peer, self.format_message("file_request",{
+        def request_chunk(i, peer):
+            chunk_request_data = {
                 "file_hash": file_hash,
                 "bit_offset": i * chunk_size,
                 "chunk_size": chunk_size if i < num_chunks - 1 else size - i * chunk_size,
                 "chunk_sequence_number": i
-            })) # need to implement this method in peer, takes a peer address and message as arguments
-            chunk_attempts[i].add(chosen_peer)
-            return True
+            }
+            self.peer.send_file_request(peer, self.format_message("file_request", chunk_request_data))
+            attempts = chunk_attempts[i].get(peer, 0)
+            chunk_attempts[i][peer] = attempts + 1
 
-        max_attempts = len(peers_with_file)  # Allow as many attempts as there are peers
-        while None in chunks:
-            time.sleep(1)
+        while None in chunks:  # Loop until all chunks are filled
             for i in range(num_chunks):
                 if chunks[i] is None:
-                    if len(chunk_attempts[i]) >= max_attempts:
-                        logging.error(f"Failed to download chunk {i} after {max_attempts} attempts.")
+                    # If the chunk is already in temporary storage
+                    if i in self.temp_file_storage.get(file_hash, {}):
+                        chunks[i] = self.temp_file_storage[file_hash][i]
                         continue
-                    if not request_chunk(i):
-                        logging.info(f"No available peers left to try for chunk {i}.")
-                        continue
-                else:
-                    chunks[i] = self.temp_file_storage[file_hash].get(i)
 
-        if all(chunk is not None for chunk in chunks):
-            return b''.join(chunks)
-        else:
-            return None
+                    # Initialize attempts dictionary for the chunk if it's empty
+                    if not chunk_attempts[i]:
+                        chunk_attempts[i] = {peer: 0 for peer in peers_with_file}
+
+                    # Select the peer with the minimum number of attempts for this chunk
+                    chosen_peer = min(chunk_attempts[i], key=chunk_attempts[i].get)
+
+                    # Request the chunk if it has been tried less than 3 times
+                    if chunk_attempts[i][chosen_peer] < number_of_attempts:
+                        request_chunk(i, chosen_peer)
+                    else:
+                        # Find another peer if current chosen has maxed out attempts
+                        available_peers = [peer for peer in peers_with_file if chunk_attempts[i][peer] <  number_of_attempts]
+                        if available_peers:
+                            chosen_peer = random.choice(available_peers)
+                            request_chunk(i, chosen_peer)
+                        else:
+                            logging.error(f"No available peers left to try for chunk {i} or max attempts reached.")
+                            break
+
+            time.sleep(1)  # Delay to allow chunk responses to arrive
+
+        # Combine chunks if all are present
+        return b''.join(chunks) if all(chunk is not None for chunk in chunks) else None
 
     def download_and_verify_file(self, file_hash, selected_file):
-            self.logger.info(f"Attempt to download and verify file: {selected_file['metadata']['name']}")
-            try:
-                reconstructed_file = self.download_file_chunks(file_hash, selected_file["metadata"]["size"])
-                if reconstructed_file:
-                    if self.verify_file(file_hash, reconstructed_file):
-                        self.save_file(selected_file["metadata"]["name"], reconstructed_file)
-                        self.logger.info("File downloaded, verified and saved successfully.")
-                        return True
-                    else:
-                        self.logger.warning("Verification failed, downloaded file does not match the original.")
-                        return False
+        self.logger.info(f"Attempt to download and verify file: {selected_file['metadata']['name']}")
+        try:
+            # Debug output
+            print("Selected file metadata:", selected_file["metadata"])
+
+            reconstructed_file = self.download_file_chunks(file_hash, selected_file["metadata"]["size"])
+            if reconstructed_file:
+                if self.verify_file(file_hash, reconstructed_file):
+                    self.save_file(selected_file["metadata"]["name"], reconstructed_file)
+                    self.logger.info("File downloaded, verified and saved successfully.")
+                    return True
                 else:
-                    self.logger.warning("Failed to download file.")
+                    self.logger.warning("Verification failed, downloaded file does not match the original.")
                     return False
-            except Exception as e:
-                self.logger.error(f"Exception during file download/verification: {e}")
+            else:
+                self.logger.warning("Failed to download file.")
+                return False
+        except Exception as e:
+            self.logger.error(f"Exception during file download/verification: {str(e)}")
+            # More detailed error logging
+            print("Error with:", file_hash, selected_file)
+            raise
 
     def verify_file(self, file_hash, data):
             try:

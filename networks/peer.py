@@ -76,6 +76,19 @@ class Peer:
                 except Exception as e:
                     logging.error(f"Error broadcasting hello message: {e}")
 
+    def send_file_request(self, peer_address, message):
+        logging.info(f"Sending file request to {peer_address} with message: {message.encode('utf-8')}")
+        try:
+            self.messager.send(peer_address, message.encode('utf-8'))
+        except Exception as e:
+            logging.error(f"Error sending file request to {peer_address}: {e}")
+
+    def send_file_chunk(self, peer_address, message):
+        logging.info(f"Sending file chunk to {peer_address} with message {message.encode('utf-8')}")
+        try:
+            self.messager.send(peer_address, message.encode('utf-8'))
+        except Exception as e:
+            logging.error(f"Error sending file chunk to {peer_address}: {e}")
 
     def send_updates(self, message_to_send):
         logging.info("Sending updates to peers...")
