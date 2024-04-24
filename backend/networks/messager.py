@@ -14,7 +14,12 @@ class Messager:
         self.port = port
         self.bcast = '.'.join(list(map(str, [int(a) | (255 ^ int(m)) for a, m in zip(addr.split('.'), mask.split('.'))])))
         self.key, self.pkey = create_key()
-
+        self.private = None
+        self.public = socket(AF_INET, SOCK_DGRAM)
+        self.public.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+        self.public.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        self.public.bind((self.bcast, self.port))
+            
     def broadcast(self, message):
         logging.info(f"Broadcasting message to {self.bcast}...")
         try:
@@ -42,13 +47,8 @@ class Messager:
     def record(self):
         logging.info("Recording incoming broadcast...")
         try:
-            s = socket(AF_INET, SOCK_DGRAM)
-            s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-            s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            s.bind((self.bcast, self.port))
-            data, addr = s.recvfrom(32768)
+            data, addr = self.public.recvfrom(32768)
             logging.debug(f"Received data from {addr}")
-            s.close()
             return data, addr
         except Exception as e:
             logging.error(f"Error recording incoming broadcast: {e}")
@@ -56,11 +56,14 @@ class Messager:
     def receive(self):
         logging.info("Receiving direct message...")
         try:
-            s = socket(AF_INET, SOCK_STREAM)
-            s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            s.bind((self.me, self.port))
-            s.listen()
-            conn, addr = s.accept()
+            if not self.me:
+                return (b'Error here', "0.0.0.0")
+            if self.me and not self.private:
+                self.private = socket(AF_INET, SOCK_STREAM)
+                self.private.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+                self.private.bind((self.me, self.port))
+                self.private.listen()        
+            conn, addr = self.private.accept()
             data = []
             batch = conn.recv(1024)
             data.append(batch)
@@ -68,7 +71,11 @@ class Messager:
                 batch = conn.recv(1024)
                 data.append(batch)
             message = b''.join(data)
-            s.close()
             return message, addr
         except Exception as e:
             logging.error(f"Error receiving direct message: {e}")
+
+    def stop(self):
+        if self.private:
+            self.private.close()
+        self.public.close()

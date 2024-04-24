@@ -44,7 +44,8 @@ class Node:
             "got_chunk": self.handle_new_chunk,
             "request_file": self.request_file,
             "save_file": self.save_file,
-            "request_chunk": self.request_chunk
+            "request_chunk": self.request_chunk,
+            "handle_file_request": self.handle_file_request
         }
 
     def run(self):
@@ -75,24 +76,22 @@ class Node:
         self.peer.send_index(addr, my_file_index_bytes)
 
     def send_file_update(self, event):
-        update_bytes = json.dumps(event["update"])
+        update_bytes = json.dumps(event["update"]).encode('utf-8')
         self.peer.send_updates(None, update_bytes)
 
     def handle_file_request(self, event):
         try:
-            file_hash = event["file_hash"]
-            bit_offset = event["bit_offset"]
-            chunk_size = event["chunk_size"]
+            data = event["data"]
             peer_address = event["addr"]
+            file_hash = data["file_hash"]
+            bit_offset = data["bit_offset"]
+            chunk_size = data["chunk_size"]
             file_path = self.file_manager.get_file_path(file_hash)
             with open(file_path, 'rb') as f:
                 f.seek(bit_offset)
                 chunk = f.read(chunk_size)
-            chunk_info = event
-            chunk_info["data"] = chunk
-            del event["action"]
-            del event["addr"]
-            self.peer.send_file_chunk(peer_address, json.dumps(chunk_info))
+            chunk_info = data
+            self.peer.send_file_chunk(peer_address, json.dumps(chunk_info).encode('utf-8'), chunk)
             logging.info(
                 f"Sent file chunk from bit: {bit_offset} to {bit_offset + chunk_size} to address: {peer_address}")
         except Exception as e:
@@ -100,16 +99,17 @@ class Node:
 
     def handle_new_chunk(self, event):
         data = event["chunk_data"]
-        chunk_info = json.loads(data)
+        chunk_info = json.loads(data.decode('utf-8'))
         self.chunk_processor.handle_chunk(chunk_info)
 
     def request_file(self, event):
-        file_hash = event["hash"]
-        selected_file = self.file_manager.get_file_data(file_hash)
+        logging.info(f"Requesting file: {event['file_hash']}")
+        file_hash = event["file_hash"]
+        selected_file = self.peer.get_peer_file(file_hash)
         self.chunk_processor = ChunkProcessor(self, file_hash, selected_file)
         if selected_file:
             logging.info(
-                f"Selected file: {selected_file['metadata']['name']} ({selected_file['metadata']['size']} bytes)")
+                f"Selected file: {selected_file['name']} ({selected_file['size']} bytes)")
             logging.info(f"Starting download for file hash {file_hash}.")
             result = self.chunk_processor.download_and_verify_file()
             if result:
@@ -122,15 +122,16 @@ class Node:
     def save_file(self, event):
         self.file_manager.save_file(event["name"], event["data"])
 
-    def peer_file_lookup(self, file_hash):
+    def get_file_peers(self, file_hash):
         result = self.peer.get_file_peers(file_hash)
         return result
 
     def request_chunk(self, event):
+        logging.info(f"Requesting chunk for file: {event['file_hash']}")
         chosen_peer = event["peer_address"]
         del event["action"]
         del event["peer_address"]
-        self.peer.send_request(chosen_peer, event)
+        self.peer.send_request(chosen_peer, json.dumps(event).encode('utf-8'))
         return True
 
     def handle_event(self, event):

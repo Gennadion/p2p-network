@@ -25,7 +25,8 @@ class Peer:
         self.message_matcher = {
             self.file_alert: self.receive_index,
             self.file_update: self.receive_file_update,
-            self.resp: self.receive_file_chunk
+            self.resp: self.receive_file_chunk,
+            self.req: self.receive_file_request
         }
         self.logger = logging.getLogger(__name__)
 
@@ -74,9 +75,9 @@ class Peer:
             except Exception as e:
                 logging.error(f"Error sending updates to {peer}: {e}")
 
-    def send_file_chunk(self, peer_address, message):
+    def send_file_chunk(self, peer_address, message, chunk):
         logging.info(f"Sending chunk to {peer_address}")
-        message_to_send = self.resp + message
+        message_to_send = self.resp + message + chunk
         try:
             self.messager.send(peer_address, message_to_send)
         except Exception as e:
@@ -94,7 +95,7 @@ class Peer:
     def receive_file_update(self, peer_address, index_bytes):
         """Process a file update message from a peer."""
         try:
-            update_message = json.loads(index_bytes)
+            update_message = json.loads(index_bytes.decode('utf-8'))
             action = update_message['action']
             file_hash = update_message['file_hash']
             if action == 'add':
@@ -105,11 +106,26 @@ class Peer:
         except Exception as e:
             logging.error(f"Error processing peer update: {e}")
 
+    def receive_file_request(self, peer_address, message_bytes):
+        """Process a file request message from a peer."""
+        try:
+            update_message = json.loads(message_bytes.decode('utf-8'))
+            event = {
+                "action": "handle_file_request",
+                "data": update_message,
+                "addr": peer_address
+            }
+            self.node.handle_event(event)
+            logging.info(f"Processed peer request from {peer_address}")
+        except Exception as e:
+            logging.error(f"Error processing peer request: {e}")
+
     def receive_file_chunk(self, peer_address, chunk_data):
         logging.info(f"Got chunk from {peer_address}")
         event = {
             "action": "got_chunk",
-            "chunk_data": chunk_data
+            "chunk_data": chunk_data[:-1024],
+            "chunk": chunk_data[-1024:]
         }
         self.node.handle_event(event)
 
@@ -127,30 +143,35 @@ class Peer:
         if peer_addr in self.peers:
             self.messager.send(peer_addr, self.req + request)
 
-    def send_data(self, peer_addr, response):
-        if peer_addr in self.peers:
-            self.messager.send(peer_addr, self.resp + response)
-
     def handle_disconnected_peer(self, peer_address):
         """Handle disconnected peers by removing all records associated with this peer address."""
         try:
-            del self.peers[peer_address]
             self.peer_indexer.remove_disconnected_peer(peer_address)
             logging.info(f"Handled disconnected peer: {peer_address}")
+            return True
         except Exception as e:
             logging.error(f"Error handling disconnected peer {peer_address}: {e}")
 
     def kill_timeouts(self):
         while not self.stop_event.is_set():
+            dead_peers = []
             for peer in self.peers:
                 if time.time() - self.peers[peer]["last_online"] > 60:
-                    self.handle_disconnected_peer(peer)
+                    if self.handle_disconnected_peer(peer):
+                        dead_peers.append(peer)
+            for peer in dead_peers:
+                del self.peers[peer]
             time.sleep(20)
 
     def get_file_peers(self, file_hash):
         peers_index = self.peer_indexer.get_peer_index()
         available_peers = peers_index[file_hash]["peers"]
         return available_peers
+    
+    def get_peer_file(self, file_hash):
+        peers_index = self.peer_indexer.get_peer_index()
+        metadata = peers_index[file_hash]["metadata"]
+        return metadata
 
     def start(self):
         logging.info("Starting Peer operations")
@@ -169,5 +190,7 @@ class Peer:
     def stop(self):
         logging.info("Stopping Peer operations")
         self.stop_event.set()
+        self.messager.stop()
         for thread in self.threads:
             thread.join(timeout=2)
+        self.peer_indexer.clear_peer_index()

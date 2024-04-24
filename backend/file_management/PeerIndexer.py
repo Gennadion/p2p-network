@@ -86,6 +86,6 @@ class PeerIndexManager:
 
     def clear_peer_index(self):
         self.logger.info("Clearing peer index...")
-        self.index_file = {}
+        self.file_indexes = {}
         self.save_peer_index()
         self.logger.info("Peer index cleared.")

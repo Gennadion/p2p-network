@@ -25,7 +25,7 @@ class ChunkProcessor:
         logging.info(f"Initializing ChunkProcessor")
 
     def handle_chunk(self, chunk_info):
-        chunk_data = chunk_info["data"]
+        chunk_data = chunk_info["chunk_data"]
         file_hash = chunk_info["file_hash"]
         chunk_sequence = chunk_info["chunk_sequence_number"]
 
@@ -42,30 +42,33 @@ class ChunkProcessor:
     def request_chunk(self, i):
         if len(self.chunk_attempts[i]) >= self.max_attempts:
             logging.error(f"Failed to download chunk {i} after {self.max_attempts} attempts.")
-            return
+            return False
         available_peers = set(self.peers_with_file.keys()) - self.chunk_attempts[i]
         chosen_peer = random.choice(list(available_peers))
         if not available_peers:
             logging.info(f"No available peers left to try for chunk {i}.")
-            return
+            return False
         event = {
             "action": "request_chunk",
-            "peer_address": available_peers,
+            "peer_address": chosen_peer,
             "file_hash": self.file_hash,
             "bit_offset": i * CHUNK_SIZE,
             "chunk_size": CHUNK_SIZE if i < self.num_chunks - 1 else self.size - i * CHUNK_SIZE
         }
         self.node.handle_event(event)
         self.chunk_attempts[i].add(chosen_peer)
+        return True
 
     def download_file_chunks(self):
         self.peers_with_file = self.node.get_file_peers(self.file_hash)
         self.max_attempts = len(self.peers_with_file)  # Allow as many attempts as there are peers
-        while None in self.chunks:
+        timeout_achieved = False
+        while None in self.chunks and not timeout_achieved:
             time.sleep(1)
             for i in range(self.num_chunks):
                 if self.chunks[i] is None:
-                    self.request_chunk(i)
+                    if not self.request_chunk(i):
+                        timeout_achieved = True
                     continue
                 self.chunks[i] = self.temp_file_storage[self.file_hash].get(i)
 
