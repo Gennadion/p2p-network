@@ -7,6 +7,8 @@ from file_management.ChunkProcessor import *
 
 
 class Node:
+    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
     def __init__(self,
                  addr,
                  mask,
@@ -16,13 +18,14 @@ class Node:
                  port=9613,
                  me=None
                  ):
-        self.peer = Peer(self, addr, mask, port, me)
-
+        self.logger = logging.getLogger(__name__)
         local_indexer = LocalIndexManager(shared_folder, index_file_name)
         local_indexer.index_files()
 
         peer_indexer = PeerIndexManager(peer_index_file_name)
         peer_indexer.load_peer_index()
+
+        self.peer = Peer(self, addr, mask, peer_indexer, port, me)
 
         self.file_manager = FileManager(self, shared_folder, local_indexer)
 
@@ -66,8 +69,9 @@ class Node:
 
     def handle_new_peer(self, event):
         addr = event["addr"]
+        self.logger.info(f"Handling new peer {addr}")
         my_file_index = self.file_manager.get_full_index()
-        my_file_index_bytes = json.dumps(my_file_index)
+        my_file_index_bytes = json.dumps(my_file_index).encode('utf-8')
         self.peer.send_index(addr, my_file_index_bytes)
 
     def send_file_update(self, event):

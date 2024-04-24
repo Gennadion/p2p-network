@@ -5,9 +5,9 @@ from Node import Node
 def main():
     logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    shared_folder = 'C:\\FileTransfers'
-    local_address = "192.168.230.4"
-    mask = "255.255.255.0"
+    shared_folder = '/home/student/Music'
+    local_address = "10.203.0.0"
+    mask = "255.255.0.0"
     port = 9613
 
     index_file_name = 'index.json'
@@ -19,8 +19,7 @@ def main():
         shared_folder,
         index_file_name,
         peer_index_file_name,
-        port,
-        me=local_address
+        port=port
     )
     node.run_forever()
 

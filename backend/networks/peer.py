@@ -2,7 +2,7 @@ import json
 import logging
 import threading
 import time
-from messager import Messager
+from networks.messager import Messager
 
 
 class Peer:
@@ -19,7 +19,6 @@ class Peer:
         self.file_update = b'Update dis'
         self.resp = b'Sendin dat'
         self.peers = {}
-        self.file_batch_size = 64
         self.stop_event = threading.Event()
         self.threads = []
         self.peer_indexer = peer_indexer
@@ -28,24 +27,27 @@ class Peer:
             self.file_update: self.receive_file_update,
             self.resp: self.receive_file_chunk
         }
+        self.logger = logging.getLogger(__name__)
 
     def alert(self):
-        while True:
+        while not self.stop_event.is_set():
             self.messager.broadcast(self.hello + self.messager.pkey)
             time.sleep(1)
 
     def discover_peers(self):
-        while True:
+        while not self.stop_event.is_set():
             data, addr = self.messager.record()
+            self.logger.info(f"Broadcast message from: {addr}")
             if data[:10] == self.hello and addr[0] != self.messager.me:
                 if data[10:] == self.messager.pkey:
                     self.messager.me = addr[0]
-                    print(f"I am existing as {self.messager.me}")
+                    self.logger.info(f"I am existing as {self.messager.me}")
                     continue
                 if addr[0] not in self.peers:
+                    print(f"New peer: {addr}")
                     self.peers[addr[0]] = {
                         "key": data[10:],
-                        "files": {}
+                        "last_online": time.time()
                     }
                     event = {
                         "action": "new_peer",
@@ -53,6 +55,7 @@ class Peer:
                     }
                     self.node.handle_event(event)
                 self.peers[addr[0]]["last_online"] = time.time()
+                self.logger.info(f"Time for peer {addr} updated")
 
     def send_index(self, peer_address, message):
         logging.info(f"Sending index to {peer_address}")
@@ -82,7 +85,8 @@ class Peer:
     def receive_index(self, peer_address, index_bytes):
         """Handle the index file received from a peer."""
         try:
-            self.peer_indexer.update_from_received_index(json.loads(index_bytes), peer_address)
+            self.peer_indexer.update_from_received_index(json.loads(index_bytes.decode('utf-8')), peer_address)
+            print('received index')
             logging.info(f"Received and processed index file from peer: {peer_address}")
         except Exception as e:
             logging.error(f"Error processing index file from {peer_address}: {e}")
@@ -110,13 +114,14 @@ class Peer:
         self.node.handle_event(event)
 
     def get_message(self):
-        while True:
+        while  not self.stop_event.is_set():
             if self.messager.me:
                 data, addr = self.messager.receive()
                 if data[:10] in self.message_matcher:
                     method = self.message_matcher[data[:10]]
                     method(addr[0], data[10:])
-                print(f"Not recognized message from peer {addr[0]}")
+                    continue
+                print(f"Not recognized message from peer {addr[0]}: {data}")
 
     def send_request(self, peer_addr, request):
         if peer_addr in self.peers:
@@ -136,7 +141,7 @@ class Peer:
             logging.error(f"Error handling disconnected peer {peer_address}: {e}")
 
     def kill_timeouts(self):
-        while True:
+        while not self.stop_event.is_set():
             for peer in self.peers:
                 if time.time() - self.peers[peer]["last_online"] > 60:
                     self.handle_disconnected_peer(peer)

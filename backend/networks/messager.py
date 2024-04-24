@@ -1,6 +1,6 @@
 from socket import *
 import logging
-from encryption import create_key
+from networks.encryption import create_key
 
 
 class Messager:
@@ -12,9 +12,8 @@ class Messager:
         self.me = me
         self.addr = addr
         self.port = port
-        self.port_direct = port + 1
         self.bcast = '.'.join(list(map(str, [int(a) | (255 ^ int(m)) for a, m in zip(addr.split('.'), mask.split('.'))])))
-        self.pkey = create_key()
+        self.key, self.pkey = create_key()
 
     def broadcast(self, message):
         logging.info(f"Broadcasting message to {self.bcast}...")
@@ -32,8 +31,9 @@ class Messager:
         try:
             s = socket(AF_INET, SOCK_STREAM)
             s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            s.connect((addr, self.port_direct))
+            s.connect((addr, self.port))
             s.sendall(message)
+            print(f"I sent: {message} to {addr}")
         except Exception as e:
             logging.error(f"Error sending message to {addr}: {e}")
         finally:
@@ -43,33 +43,32 @@ class Messager:
         logging.info("Recording incoming broadcast...")
         try:
             s = socket(AF_INET, SOCK_DGRAM)
+            s.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
             s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            s.bind((self.addr, self.port))
+            s.bind((self.bcast, self.port))
             data, addr = s.recvfrom(32768)
             logging.debug(f"Received data from {addr}")
+            s.close()
             return data, addr
         except Exception as e:
             logging.error(f"Error recording incoming broadcast: {e}")
-        finally:
-            if s:
-                s.close()
 
     def receive(self):
         logging.info("Receiving direct message...")
         try:
             s = socket(AF_INET, SOCK_STREAM)
             s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-            s.bind((self.me, self.port_direct))
+            s.bind((self.me, self.port))
             s.listen()
             conn, addr = s.accept()
-            data = b""
-            while True:
+            data = []
+            batch = conn.recv(1024)
+            data.append(batch)
+            while batch:
                 batch = conn.recv(1024)
-                if not batch:
-                    break
-                data += batch
-            return data, addr
+                data.append(batch)
+            message = b''.join(data)
+            s.close()
+            return message, addr
         except Exception as e:
             logging.error(f"Error receiving direct message: {e}")
-        finally:
-            conn.close()
