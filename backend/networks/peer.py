@@ -93,7 +93,6 @@ class Peer:
             update_message = json.loads(index_bytes)
             action = update_message['action']
             file_hash = update_message['file_hash']
-
             if action == 'add':
                 self.peer_indexer.add_file_index(file_hash, update_message['metadata'], peer_address)
             elif action == 'delete':

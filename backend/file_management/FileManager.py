@@ -14,10 +14,11 @@ def create_update_message(action, file_hash, metadata=None):
     return message
 
 
-def format_update(keyword, path):
+def format_update(keyword, file_hash, metadata=None):
     event = {
         "action": keyword,
-        "path": path
+        "file_hash": file_hash,
+        "metadata": metadata
     }
     return event
 
@@ -68,6 +69,34 @@ class FileManager:
     def clear_indices(self):
         self.local_indexer.clear_local_index()
 
-    def share_file_index(self, path):
-        event = format_update("add", path)
-        self.node.handle_event(event)
+    def share_file_index(self, file_path):
+        """Share a newly added file index with peers, only including the filename and size in the metadata."""
+        try:
+            file_hash, file_metadata = self.local_indexer.add_index_to_json(file_path)
+            filtered_metadata = {
+                "name": file_metadata["name"],
+                "size": file_metadata["size"]
+            }
+            update_message = create_update_message("add", file_hash, filtered_metadata)
+            event = {
+                "action": "send_file_update",
+                "update": update_message
+            }
+            self.node.handle_event(event)
+            logging.info(f"Shared file index for {file_path} with peers.")
+        except Exception as e:
+            logging.error(f"Error sharing file index for {file_path}: {e}")
+
+    def unshare_file_index(self, file_path):
+        """Unshare a file index with peers."""
+        try:
+            file_hash = self.local_indexer.delete_index_from_json(file_path)
+            update_message = create_update_message("delete", file_hash)
+            event = {
+                "action": "send_file_update",
+                "update": update_message
+            }
+            self.node.handle_event(event)
+            logging.info(f"Unshared file index for {file_path}")
+        except Exception as e:
+            logging.error(f"Error unsharing file index for {file_path}: {e}")
