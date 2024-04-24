@@ -1,118 +1,169 @@
 import json
+import logging
 import threading
 import time
-import logging
-import socket
+from messager import Messager
+
 
 class Peer:
-    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    def __init__(self, addr, mask, port=9613, file_manager=None, messager=None):
-        self.logger = logging.getLogger(__name__)
-        logging.info(f"Initializing Peer at {addr} on port {port}")
-        self.messager = messager
+    def __init__(self, node, addr, mask, peer_indexer, port=9613, me=None):
+        self.node = node
+        self.messager = Messager(addr, mask, port, me)
         self.files = []
         self.hello = b'Imma here!'
+        self.req = b'Gimme dat!'
+        self.file_alert = b'I have dis'
+        self.file_update = b'Update dis'
+        self.resp = b'Sendin dat'
         self.peers = {}
         self.file_batch_size = 64
-        self.file_manager = file_manager
-        self.me = addr
         self.stop_event = threading.Event()
+        self.threads = []
+        self.peer_indexer = peer_indexer
+        self.message_matcher = {
+            self.file_alert: self.receive_index,
+            self.file_update: self.receive_file_update,
+            self.resp: self.receive_file_chunk
+        }
 
-    def listen_for_broadcasts(self):
-        while not self.stop_event.is_set():
-            try:
-                data, addr = self.messager.record()
-                if addr[0] == self.me:
-                    continue  
-
-                if data[:10] == self.hello and addr[0] != self.me and addr[0] not in self.peers:
-                    new_peer_address = addr[0]
-                    self.peers[new_peer_address] = {"last_online": time.time()}
-                    logging.info(f"Discovered new peer at {new_peer_address}")
-                    self.file_manager.share_index_file_with_new_peer(new_peer_address)
-                elif data[:10] == self.hello and addr[0] in self.peers:
-                    self.peers[addr[0]]["last_online"] = time.time()
-                else:
-                    logging
-                    self.file_manager.handle_received_message(json.loads(data.decode("utf-8")), addr)
-            except socket.timeout:
-                continue
-            except Exception as e:
-                logging.error(f"Error during peer discovery: {e}")
-            finally: 
-                if self.stop_event.is_set():
-                    break
-
-    def listen_for_direct_messages(self):
-        while not self.stop_event.is_set():
-            try:
-                data, addr = self.messager.receive()
-                if data:
-                    self.file_manager.handle_received_message(json.loads(data.decode("utf-8")), addr)
-            except socket.timeout: 
-                continue
-            except Exception as e:
-                logging.error(f"Error receiving direct message: {e}")
-            finally:
-                if self.stop_event.is_set():
-                    break
+    def alert(self):
+        while True:
+            self.messager.broadcast(self.hello + self.messager.pkey)
+            time.sleep(1)
 
     def discover_peers(self):
-        logging.info("Starting peer discovery...")
-        
-        last_broadcast_time = time.time() 
-        time.sleep(15)  
+        while True:
+            data, addr = self.messager.record()
+            if data[:10] == self.hello and addr[0] != self.messager.me:
+                if data[10:] == self.messager.pkey:
+                    self.messager.me = addr[0]
+                    print(f"I am existing as {self.messager.me}")
+                    continue
+                if addr[0] not in self.peers:
+                    self.peers[addr[0]] = {
+                        "key": data[10:],
+                        "files": {}
+                    }
+                    event = {
+                        "action": "new_peer",
+                        "addr": addr[0]
+                    }
+                    self.node.handle_event(event)
+                self.peers[addr[0]]["last_online"] = time.time()
 
-        while not self.stop_event.is_set():
-            current_time = time.time()
-            time_since_last_broadcast = current_time - last_broadcast_time
+    def send_index(self, peer_address, message):
+        logging.info(f"Sending index to {peer_address}")
+        message_to_send = self.file_alert + message
+        try:
+            self.messager.send(peer_address, message_to_send)
+        except Exception as e:
+            logging.error(f"Error sending index to {peer_address}: {e}")
 
-            if time_since_last_broadcast >= 15:
-                try:
-                    logging.info("Broadcasting hello message...")
-                    self.messager.broadcast(self.hello)
-                    last_broadcast_time = time.time()
-                except Exception as e:
-                    logging.error(f"Error broadcasting hello message: {e}")
-
-
-    def send_updates(self, message_to_send):
+    def send_updates(self, _, message):
         logging.info("Sending updates to peers...")
+        message_to_send = self.file_update + message
         for peer in self.peers.keys():
             try:
                 self.messager.send(peer, message_to_send)
             except Exception as e:
                 logging.error(f"Error sending updates to {peer}: {e}")
 
-    def send_index(self, peer_address, message_to_send):
-        logging.info(f"Sending index to {peer_address}")
+    def send_file_chunk(self, peer_address, message):
+        logging.info(f"Sending chunk to {peer_address}")
+        message_to_send = self.resp + message
         try:
             self.messager.send(peer_address, message_to_send)
         except Exception as e:
-            logging.error(f"Error sending index to {peer_address}: {e}")
+            logging.error(f"Error sending chunk to {peer_address}: {e}")
+
+    def receive_index(self, peer_address, index_bytes):
+        """Handle the index file received from a peer."""
+        try:
+            self.peer_indexer.update_from_received_index(json.loads(index_bytes), peer_address)
+            logging.info(f"Received and processed index file from peer: {peer_address}")
+        except Exception as e:
+            logging.error(f"Error processing index file from {peer_address}: {e}")
+
+    def receive_file_update(self, peer_address, index_bytes):
+        """Process a file update message from a peer."""
+        try:
+            update_message = json.loads(index_bytes)
+            action = update_message['action']
+            file_hash = update_message['file_hash']
+
+            if action == 'add':
+                self.peer_indexer.add_file_index(file_hash, update_message['metadata'], peer_address)
+            elif action == 'delete':
+                self.peer_indexer.remove_file_index(file_hash, peer_address)
+            logging.info(f"Processed peer update: {action} for file {file_hash}")
+        except Exception as e:
+            logging.error(f"Error processing peer update: {e}")
+
+    def receive_file_chunk(self, peer_address, chunk_data):
+        logging.info(f"Got chunk from {peer_address}")
+        event = {
+            "action": "got_chunk",
+            "chunk_data": chunk_data
+        }
+        self.node.handle_event(event)
+
+    def get_message(self):
+        while True:
+            if self.messager.me:
+                data, addr = self.messager.receive()
+                if data[:10] in self.message_matcher:
+                    method = self.message_matcher[data[:10]]
+                    method(addr[0], data[10:])
+                print(f"Not recognized message from peer {addr[0]}")
+
+    def send_request(self, peer_addr, request):
+        if peer_addr in self.peers:
+            self.messager.send(peer_addr, self.req + request)
+
+    def send_data(self, peer_addr, response):
+        if peer_addr in self.peers:
+            self.messager.send(peer_addr, self.resp + response)
+
+    def handle_disconnected_peer(self, peer_address):
+        """Handle disconnected peers by removing all records associated with this peer address."""
+        try:
+            del self.peers[peer_address]
+            self.peer_indexer.remove_disconnected_peer(peer_address)
+            logging.info(f"Handled disconnected peer: {peer_address}")
+        except Exception as e:
+            logging.error(f"Error handling disconnected peer {peer_address}: {e}")
 
     def kill_timeouts(self):
-        logging.info("Monitoring for peer timeouts...")
-        while not self.stop_event.is_set():
-            for peer in list(self.peers):
-                if time.time() - self.peers[peer]["last_online"] > 15:
-                    logging.info(f"Peer {peer} timed out")
-                    self.file_manager.handle_disconnected_peer(peer)
-                    del self.peers[peer]
+        while True:
+            for peer in self.peers:
+                if time.time() - self.peers[peer]["last_online"] > 60:
+                    self.handle_disconnected_peer(peer)
             time.sleep(20)
+
+    def get_file_peers(self, file_hash):
+        peers_index = self.peer_indexer.get_peer_index()
+        available_peers = peers_index[file_hash]["peers"]
+        return available_peers
 
     def start(self):
         logging.info("Starting Peer operations")
-        self.threads = []
-        interactions = [self.listen_for_broadcasts, self.discover_peers, self.kill_timeouts, self.listen_for_direct_messages]
+        interactions = [
+            self.alert,
+            self.discover_peers,
+            self.get_message,
+            self.kill_timeouts
+        ]
         self.stop_event.clear()
         for action in interactions:
             thread = threading.Thread(target=action, daemon=True)
             thread.start()
             self.threads.append(thread)
+
     def stop(self):
         logging.info("Stopping Peer operations")
         self.stop_event.set()
         for thread in self.threads:
-            thread.join(timeout=5)  
+            thread.join(timeout=2)
