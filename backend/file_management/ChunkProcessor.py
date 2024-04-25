@@ -32,12 +32,9 @@ class ChunkProcessor:
         if file_hash not in self.temp_file_storage:
             self.temp_file_storage[file_hash] = {}
 
+        self.chunks[chunk_sequence] = chunk_data
         self.temp_file_storage[file_hash][chunk_sequence] = chunk_data
-
-    def clear_temp_storage(self, file_hash):
-        if file_hash in self.temp_file_storage:
-            del self.temp_file_storage[file_hash]
-            logging.info(f"Temporary storage cleared for file hash {file_hash}")
+        logging.info(f"Saved chunk {chunk_sequence}")
 
     def request_chunk(self, i):
         if len(self.chunk_attempts[i]) >= self.max_attempts:
@@ -53,7 +50,8 @@ class ChunkProcessor:
             "peer_address": chosen_peer,
             "file_hash": self.file_hash,
             "bit_offset": i * CHUNK_SIZE,
-            "chunk_size": CHUNK_SIZE if i < self.num_chunks - 1 else self.size - i * CHUNK_SIZE
+            "chunk_size": CHUNK_SIZE if i < self.num_chunks - 1 else self.size - i * CHUNK_SIZE,
+            "chunk_sequence_number": i
         }
         self.node.handle_event(event)
         self.chunk_attempts[i].add(chosen_peer)
@@ -67,10 +65,7 @@ class ChunkProcessor:
             time.sleep(1)
             for i in range(self.num_chunks):
                 if self.chunks[i] is None:
-                    if not self.request_chunk(i):
-                        timeout_achieved = True
-                    continue
-                self.chunks[i] = self.temp_file_storage[self.file_hash].get(i)
+                    self.request_chunk(i)
 
         if all(chunk is not None for chunk in self.chunks):
             return b''.join(self.chunks)

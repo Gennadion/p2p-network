@@ -100,6 +100,7 @@ class Node:
     def handle_new_chunk(self, event):
         data = event["chunk_data"]
         chunk_info = json.loads(data.decode('utf-8'))
+        chunk_info["chunk_data"] = event["chunk"]
         self.chunk_processor.handle_chunk(chunk_info)
 
     def request_file(self, event):
@@ -113,7 +114,7 @@ class Node:
             logging.info(f"Starting download for file hash {file_hash}.")
             result = self.chunk_processor.download_and_verify_file()
             if result:
-                self.chunk_processor.clear_temp_storage(file_hash)
+                logging.info(f"Saved and verified file {file_hash}")
                 return
             logging.error(f"Error downloading file with hash {file_hash}.")
             return

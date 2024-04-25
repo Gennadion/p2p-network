@@ -38,7 +38,7 @@ class Messager:
             s.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
             s.connect((addr, self.port))
             s.sendall(message)
-            print(f"I sent: {message} to {addr}")
+            logging.info(f"I sent: {message} to {addr}")
         except Exception as e:
             logging.error(f"Error sending message to {addr}: {e}")
         finally:

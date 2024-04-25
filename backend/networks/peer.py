@@ -2,6 +2,7 @@ import json
 import logging
 import threading
 import time
+import struct
 from networks.messager import Messager
 
 
@@ -45,7 +46,7 @@ class Peer:
                     self.logger.info(f"I am existing as {self.messager.me}")
                     continue
                 if addr[0] not in self.peers:
-                    print(f"New peer: {addr}")
+                    self.logger.info(f"New peer: {addr}")
                     self.peers[addr[0]] = {
                         "key": data[10:],
                         "last_online": time.time()
@@ -77,7 +78,8 @@ class Peer:
 
     def send_file_chunk(self, peer_address, message, chunk):
         logging.info(f"Sending chunk to {peer_address}")
-        message_to_send = self.resp + message + chunk
+        length = struct.pack('!H', len(chunk))
+        message_to_send = self.resp + length + chunk + message
         try:
             self.messager.send(peer_address, message_to_send)
         except Exception as e:
@@ -87,7 +89,6 @@ class Peer:
         """Handle the index file received from a peer."""
         try:
             self.peer_indexer.update_from_received_index(json.loads(index_bytes.decode('utf-8')), peer_address)
-            print('received index')
             logging.info(f"Received and processed index file from peer: {peer_address}")
         except Exception as e:
             logging.error(f"Error processing index file from {peer_address}: {e}")
@@ -122,22 +123,24 @@ class Peer:
 
     def receive_file_chunk(self, peer_address, chunk_data):
         logging.info(f"Got chunk from {peer_address}")
+        length = struct.unpack('!H', chunk_data[:2])[0]
+        chunk = chunk_data[2:2 + length]
         event = {
             "action": "got_chunk",
-            "chunk_data": chunk_data[:-1024],
-            "chunk": chunk_data[-1024:]
+            "chunk_data": chunk_data[2 + length:],
+            "chunk": chunk
         }
         self.node.handle_event(event)
 
     def get_message(self):
-        while  not self.stop_event.is_set():
+        while not self.stop_event.is_set():
             if self.messager.me:
                 data, addr = self.messager.receive()
                 if data[:10] in self.message_matcher:
                     method = self.message_matcher[data[:10]]
                     method(addr[0], data[10:])
                     continue
-                print(f"Not recognized message from peer {addr[0]}: {data}")
+                logging.error(f"Not recognized message from peer {addr[0]}: {data}")
 
     def send_request(self, peer_addr, request):
         if peer_addr in self.peers:
