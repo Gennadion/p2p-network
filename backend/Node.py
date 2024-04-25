@@ -76,6 +76,7 @@ class Node:
         self.peer.send_index(addr, my_file_index_bytes)
 
     def send_file_update(self, event):
+        self.logger.info("sent file update")
         update_bytes = json.dumps(event["update"]).encode('utf-8')
         self.peer.send_updates(None, update_bytes)
 
@@ -92,19 +93,20 @@ class Node:
                 chunk = f.read(chunk_size)
             chunk_info = data
             self.peer.send_file_chunk(peer_address, json.dumps(chunk_info).encode('utf-8'), chunk)
-            logging.info(
+            self.logger.info(
                 f"Sent file chunk from bit: {bit_offset} to {bit_offset + chunk_size} to address: {peer_address}")
         except Exception as e:
-            logging.error(f"Error handling file request: {e}")
+            self.logger.error(f"Error handling file request: {e}")
 
     def handle_new_chunk(self, event):
+        self.logger.info("received new chunk")
         data = event["chunk_data"]
         chunk_info = json.loads(data.decode('utf-8'))
         chunk_info["chunk_data"] = event["chunk"]
         self.chunk_processor.handle_chunk(chunk_info)
 
     def request_file(self, event):
-        logging.info(f"Requesting file: {event['file_hash']}")
+        self.logger.info(f"Requesting file: {event['file_hash']}")
         file_hash = event["file_hash"]
         selected_file = self.peer.get_peer_file(file_hash)
         self.chunk_processor = ChunkProcessor(self, file_hash, selected_file)
@@ -114,11 +116,11 @@ class Node:
             logging.info(f"Starting download for file hash {file_hash}.")
             result = self.chunk_processor.download_and_verify_file()
             if result:
-                logging.info(f"Saved and verified file {file_hash}")
+                self.logger.info(f"Saved and verified file {file_hash}")
                 return
-            logging.error(f"Error downloading file with hash {file_hash}.")
+            self.logger.error(f"Error downloading file with hash {file_hash}.")
             return
-        logging.error(f"File with hash {file_hash} not found in peer index.")
+        self.logger.error(f"File with hash {file_hash} not found in peer index.")
 
     def save_file(self, event):
         self.file_manager.save_file(event["name"], event["data"])
@@ -128,7 +130,7 @@ class Node:
         return result
 
     def request_chunk(self, event):
-        logging.info(f"Requesting chunk for file: {event['file_hash']}")
+        self.logger.info(f"Requesting chunk for file: {event['file_hash']}")
         chosen_peer = event["peer_address"]
         del event["action"]
         del event["peer_address"]
@@ -136,7 +138,11 @@ class Node:
         return True
 
     def handle_event(self, event):
+        if "action" not in event:
+            self.logger.error(f"No action event: {event}")
+            return
+        self.logger.info(f"handling event {event['action']}")
         if event["action"] in self.event_dictionary:
             self.event_dictionary[event["action"]](event)
             return
-        logging.error(f"Unrecognized event: {event['action']}")
+        self.logger.error(f"Unrecognized event: {event['action']}")
