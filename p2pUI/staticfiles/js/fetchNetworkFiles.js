@@ -23,14 +23,15 @@ function fetchNetworkFiles() {
 
                 var fileNameSpan = $('<span>', {
                     'class': 'file-name',
-                    'text': file
+                    'text': file.name
                 });
 
 
                 var downloadButton = $('<button>', {
                     'type': 'button',
                     'class': 'btn btn-outline-primary btn-sm share-btn',
-                    'html': '<i class="bi bi-download"></i> Get'
+                    'html': '<i class="bi bi-download"></i> Get',
+                     'onclick': 'getFile()'
                 });
 
 
