@@ -1,4 +1,5 @@
 import asyncio
+import json
 import random
 import threading
 import time
@@ -9,8 +10,22 @@ from asgiref.sync import sync_to_async
 # Create your views here.
 from django.http import HttpResponse, JsonResponse
 
+
 # Shared data structure to store network files
-network_files = ["File Name 1", "File Name 2"]
+class NetworkFile:
+
+    def __init__(self, name, acquired=False):
+        self.name = name
+        self.acquired = acquired
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'acquired': self.acquired
+        }
+
+
+network_files = [NetworkFile("File Name 1"), NetworkFile("File Name 2", True)]
 active_peers = ['peer1', 'peer2', 'peer3']
 
 
@@ -24,11 +39,11 @@ def update_network_files():
     global network_files
     while True:
         # Simulate generating new network files
-        new_files = [f"New File {int(network_files[-1].split(' ')[-1]) + 1}"]
+        new_files = [NetworkFile(name=f"New File {int(network_files[-1].name.split(' ')[-1]) + 1}")]
         # Update the shared data structure
         network_files.extend(new_files)
         # Sleep for some time
-        time.sleep(10)
+        time.sleep(30)
 
 
 # Create a separate thread for updating network files
@@ -61,7 +76,9 @@ async def get_network_files_async(request):
     print('prepare to get files on network')
     # Get the current state of network files (snapshot)
     current_files = network_files.copy()
-    return JsonResponse({'net_files': current_files})
+    serialized_files = [file.to_dict() for file in current_files]
+
+    return JsonResponse({'net_files': serialized_files})
 
 
 async def get_my_files_async(request):
@@ -81,6 +98,7 @@ async def get_peers_async(request):
 async def index(request):
     await asyncio.sleep(1)
     return render(request, 'base/index.html')
+
 
 async def index_disconnected(request):
     await asyncio.sleep(1)
