@@ -23,10 +23,11 @@ function reloadPeers() {
 //                info.show(); // Show info text
             } else {
                 data.active_peers.forEach(peer => {
+                    console.log(peer)
                     // Create list item for each peer
                     var listItem = $('<li>', {
                         'class': 'list-group-item d-flex justify-content-between align-items-center',
-                        'html': '<span class="file-name">' + peer + '</span>' +
+                        'html': '<span class="file-name">' + peer.username + '</span>' +
                                 '<button type="button" class="btn btn-outline-primary btn-sm share-btn">' +
                                     '<i class="bi bi-eye-fill"></i>' +
                                 '</button>'
