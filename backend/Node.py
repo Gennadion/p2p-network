@@ -6,8 +6,22 @@ from file_management.PeerIndexer import *
 from file_management.ChunkProcessor import *
 
 
+def generate_response(files, origin, metadata_keys, main_key):
+    response = {origin: []}
+    for hsh, metadata in files.items():
+        new_elem = {
+            main_key: hsh,
+            "origin": origin
+        }
+        for key in metadata_keys:
+            new_elem[key] = metadata[key]
+        response[origin].append(new_elem)
+    return response
+
+
 class Node:
-    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def __init__(self,
                  addr,
@@ -106,21 +120,27 @@ class Node:
         self.chunk_processor.handle_chunk(chunk_info)
 
     def request_file(self, event):
-        self.logger.info(f"Requesting file: {event['file_hash']}")
-        file_hash = event["file_hash"]
-        selected_file = self.peer.get_peer_file(file_hash)
-        self.chunk_processor = ChunkProcessor(self, file_hash, selected_file)
-        if selected_file:
-            logging.info(
-                f"Selected file: {selected_file['name']} ({selected_file['size']} bytes)")
-            logging.info(f"Starting download for file hash {file_hash}.")
-            result = self.chunk_processor.download_and_verify_file()
-            if result:
-                self.logger.info(f"Saved and verified file {file_hash}")
+        if self.chunk_processor is None:
+            self.logger.info(f"Requesting file: {event['file_hash']}")
+            file_hash = event["file_hash"]
+            selected_file = self.peer.get_peer_file(file_hash)
+            self.chunk_processor = ChunkProcessor(self, file_hash, selected_file)
+            if selected_file:
+                logging.info(
+                    f"Selected file: {selected_file['name']} ({selected_file['size']} bytes)")
+                logging.info(f"Starting download for file hash {file_hash}.")
+                result = self.chunk_processor.download_and_verify_file()
+                if result:
+                    self.logger.info(f"Saved and verified file {file_hash}")
+                    self.chunk_processor = None
+                    return
+                self.logger.error(f"Error downloading file with hash {file_hash}.")
+                self.chunk_processor = None
                 return
-            self.logger.error(f"Error downloading file with hash {file_hash}.")
-            return
-        self.logger.error(f"File with hash {file_hash} not found in peer index.")
+            self.logger.error(f"File with hash {file_hash} not found in peer index.")
+            self.chunk_processor = None
+        else:
+            self.logger.info(f"Requested {event} while downloading other file")
 
     def save_file(self, event):
         self.file_manager.save_file(event["name"], event["data"])
@@ -146,3 +166,28 @@ class Node:
             self.event_dictionary[event["action"]](event)
             return
         self.logger.error(f"Unrecognized event: {event['action']}")
+
+    def get_local_files(self):
+        files = self.file_manager.get_full_index()
+        response = generate_response(files, "local_files", ["name", "size"], "hash")
+        return response
+
+    def get_downloading(self):
+        response = {"requested_file": []}
+        if self.chunk_processor is None:
+            return response
+        response["requested_file"].append({
+            "name": self.chunk_processor.name,
+            "size": self.chunk_processor.size,
+            "hash": self.chunk_processor.file_hash,
+            "origin": "requested_file"
+        })
+
+    def get_net_files(self):
+        files = self.peer.peer_indexer.get_peer_index()
+        response = generate_response(files, "net_files", ["name", "size", "peers"], "hash")
+        return response
+
+    def get_active_peers(self):
+        response = generate_response(self.peer.peers, "active_peers", ["key", "last_online"], "address")
+        return response
