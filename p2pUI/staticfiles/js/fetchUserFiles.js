@@ -26,8 +26,8 @@ fetch('/get-my-files/')
             var listItem = $('<li>', {
                 'class': 'list-group-item d-flex justify-content-between align-items-center',
                 'html': '<span class="file-name">' + file + '</span>' +
-                        '<button type="button" class="btn btn-outline-primary btn-sm share-btn">' +
-                            '<i class="bi bi-share-fill"></i> Share' +
+                        '<button type="button" class="btn btn-outline-danger btn-sm share-btn">' +
+                            '<i class="bi "></i> Delete' +
                         '</button>'
             });
             myContent.append(listItem);
