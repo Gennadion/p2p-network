@@ -1,6 +1,6 @@
 from socket import *
 import logging
-from networks.encryption import create_key
+from .encryption import create_key
 
 
 class Messager:

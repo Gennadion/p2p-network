@@ -8,6 +8,6 @@ urlpatterns = [
     path('no-connection/', views.index_disconnected),
 
     path('get-network-files/', views.get_network_files_async, name='get_network_files'),
-    path('get-my-files/', views.get_my_files_async, name='get_my_files'),
+    path('get-local-files/', views.get_local_files_async, name='get_local_files'),
     path('get-active-peers/', views.get_peers_async, name='get_active_peers'),
 ]

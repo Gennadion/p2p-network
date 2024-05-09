@@ -5,9 +5,15 @@ from Node import Node
 def main():
     logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    shared_folder = '../../Music'
-    local_address = "10.203.0.0"
-    mask = "255.255.0.0"
+    # shared_folder = '../../Music'
+    # local_address = "10.203.0.0"
+    # mask = "255.255.0.0"
+    # port = 9613
+
+    # alexarlord-boop setup
+    shared_folder = '../../Desktop/p2p'
+    local_address = "192.168.96.0"
+    mask = "255.255.224.0"
     port = 9613
 
     index_file_name = '../../index.json'

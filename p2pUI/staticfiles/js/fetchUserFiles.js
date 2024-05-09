@@ -2,13 +2,23 @@
    potential use: check localhost directory with saved content, that user want to share over p2p
 */
 
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
 function fetchUserFiles() {
         const my_loader = $('#myfiles-loader');
     const my_info = $('#myfiles-info');
     $('#my-content').html('');
     my_info.hide();
     my_loader.show();
-fetch('/get-my-files/')
+fetch('/get-local-files/')
     .then(response => {
         if (response.ok) {
             return response.json();
@@ -21,14 +31,17 @@ fetch('/get-my-files/')
         console.log(data);
         var myContent = $('#my-content');
         myContent.empty(); // Clear previous content
-        data.my_files.forEach(file => {
+        data.local_files.forEach(file => {
+        const fileSize = formatFileSize(file.size);
             // Create list item for each file
             var listItem = $('<li>', {
                 'class': 'list-group-item d-flex justify-content-between align-items-center',
-                'html': '<span class="file-name">' + file + '</span>' +
-                        '<button type="button" class="btn btn-outline-danger btn-sm share-btn">' +
-                            '<i class="bi "></i> Delete' +
-                        '</button>'
+                'html': '<span class="file-name">' + file.name + '</span>' +
+                        '<span class="file-name">' + 'size: ' + fileSize + '</span>'
+//                        +
+//                        '<button type="button" class="btn btn-outline-danger btn-sm share-btn">' +
+//                            '<i class="bi "></i> Delete' +
+//                        '</button>'
             });
             myContent.append(listItem);
         });

@@ -1,5 +1,4 @@
   function searchListItems() {
-        console.log('searching');
         var input, filter, ul, li, span, txtValue;
         input = document.getElementById('search-input');
         filter = input.value.toUpperCase();

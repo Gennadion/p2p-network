@@ -1,11 +1,11 @@
 import asyncio
-import json
-import random
 import threading
 import time
+import logging
+
+from .backend.Node import Node
 
 from django.shortcuts import render
-from asgiref.sync import sync_to_async
 
 # Create your views here.
 from django.http import HttpResponse, JsonResponse
@@ -43,68 +43,112 @@ class Peer:
         }
 
 
-network_files = [FileModel("test", 1024, "hash1", "peer 1")]
-active_peers = [Peer(123, 12, 8000, "active_peer_1")]
+local_files = []
+network_files = []
+active_peers = []
+
+
+# Function to continuously update local files
+def update_local_files(node):
+    global local_files
+    while True:
+        # Update the shared data structure
+        local_files = node.get_local_files()
+
+        # Sleep for some time
+        time.sleep(1)
 
 
 # Function to continuously update network files
-def update_network_files():
+def update_network_files(node):
     global network_files
     while True:
-        # Generating new network files
         # Update the shared data structure
-
+        network_files = node.get_net_files()
         # Sleep for some time
-        time.sleep(10)
+        time.sleep(3)
 
 
-def update_active_peers():
+def update_active_peers(node):
     global active_peers
     while True:
-        # Generate random peer names
         # Update the shared data structure
+        active_peers = node.get_active_peers()
         # Sleep for some time
-        time.sleep(10)
-
-
-# Create a separate thread for updating network files
-update_thread = threading.Thread(target=update_network_files)
-update_thread.daemon = True  # Daemonize the thread, so it stops when the main thread exits
-update_thread.start()
-
-# Create a separate thread for updating active peers
-update_thread = threading.Thread(target=update_active_peers)
-update_thread.daemon = True  # Daemonize the thread, so it stops when the main thread exits
-update_thread.start()
+        time.sleep(3)
 
 
 # helper funcs
 async def get_network_files_async(request):
+    global network_files
     print('prepare to get files on network')
     # Get the current state of network files (snapshot)
-    current_files = network_files.copy()
-    serialized_files = [file.to_dict() for file in current_files]
-
-    return JsonResponse({'net_files': serialized_files})
+    # serialized_files = [file for file in network_files]
+    return JsonResponse(network_files, safe=False)
 
 
-async def get_my_files_async(request):
+async def get_local_files_async(request):
+    global local_files
     print('prepare to get files on localhost')
-    await asyncio.sleep(2)
-    my_files = ["My file 1", "My file 2"]
-    return JsonResponse({'my_files': my_files})
+    time.sleep(2)
+    # serialized_files = [file for file in local_files]
+
+    return JsonResponse(local_files, safe=False)
 
 
 async def get_peers_async(request):
+    global active_peers
     print('prepare to get active peers')
     # Get the current state of active peers (snapshot)
-    current_peers = active_peers.copy()
-    serialized_peers = [peer.to_dict() for peer in current_peers]
-    return JsonResponse({'active_peers': serialized_peers})
+    # serialized_peers = [peer for peer in active_peers]
+    return JsonResponse(active_peers, safe=False)
+
+
+def initialize_node():
+    # alexarlord-boop setup
+    shared_folder = '../../Desktop/p2p'
+    local_address = "192.168.96.0"
+    mask = "255.255.224.0"
+    port = 9613
+
+    index_file_name = '../../index.json'
+    peer_index_file_name = '../../peer_index.json'
+
+    node = Node(
+        local_address,
+        mask,
+        shared_folder,
+        index_file_name,
+        peer_index_file_name,
+        port=port
+    )
+
+
+    # Create a separate thread for updating local files for each node
+    update_thread = threading.Thread(target=update_local_files, args=(node,))
+    update_thread.daemon = True  # Daemonize the thread, so it stops when the main thread exits
+    update_thread.start()
+
+    # Create a separate thread for updating network files for each node
+    update_thread = threading.Thread(target=update_network_files, args=(node,))
+    update_thread.daemon = True  # Daemonize the thread, so it stops when the main thread exits
+    update_thread.start()
+
+    # Create a separate thread for updating active peers for each node
+    update_thread = threading.Thread(target=update_active_peers, args=(node,))
+    update_thread.daemon = True  # Daemonize the thread, so it stops when the main thread exits
+    update_thread.start()
+
+    node.run_forever()
 
 
 async def index(request):
+    # Initialize and run the Node in a separate thread
+    node_thread = threading.Thread(target=initialize_node)
+    node_thread.start()
+
     await asyncio.sleep(1)
+
     return render(request, 'base/index.html')
 
 

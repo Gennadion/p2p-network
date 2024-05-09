@@ -1,4 +1,4 @@
-from file_management.Overwatcher import *
+from .Overwatcher import *
 import logging
 import os
 

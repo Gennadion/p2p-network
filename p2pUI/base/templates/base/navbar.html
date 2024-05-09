@@ -8,10 +8,18 @@
     <div class="collapse navbar-collapse justify-content-end me-3" id="navbarNav">
       <ul class="navbar-nav">
         <li class="nav-item">
-          <a href="/no-connection/" class="btn btn-sm btn-danger">Disconnect</a>
-          <a href="/" class="btn btn-sm btn-success">Connect</a>
+          <button id="disconnectBtn" class="btn btn-sm btn-danger">Disconnect</button>
+          <button id="connectBtn" class="btn btn-sm btn-success">Connect</button>
         </li>
       </ul>
     </div>
   </div>
 </nav>
+
+<script>
+  // Get the port number from the current URL
+  const portNumber = window.location.port || "80"; // Default to port 80 if no port specified
+
+  // Update the text content of the span elements with the port number
+  document.getElementById("portNumber").textContent = portNumber;
+</script>

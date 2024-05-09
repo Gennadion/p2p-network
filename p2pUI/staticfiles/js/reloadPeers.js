@@ -19,7 +19,7 @@ function reloadPeers() {
             console.log(data);
             peersContent.html('');
             if (data.active_peers.length === 0) {
-                console.log('empty');
+                console.log('Peer list is empty');
 //                info.show(); // Show info text
             } else {
                 data.active_peers.forEach(peer => {
@@ -27,7 +27,7 @@ function reloadPeers() {
                     // Create list item for each peer
                     var listItem = $('<li>', {
                         'class': 'list-group-item d-flex justify-content-between align-items-center',
-                        'html': '<span class="file-name">' + peer.username + '</span>' +
+                        'html': '<span class="file-name">' + peer.key + '</span>' +
                                 '<button type="button" class="btn btn-outline-primary btn-sm share-btn">' +
                                     '<i class="bi bi-eye-fill"></i>' +
                                 '</button>'
