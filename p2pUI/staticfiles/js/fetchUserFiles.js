@@ -36,8 +36,9 @@ fetch('/get-local-files/')
             // Create list item for each file
             var listItem = $('<li>', {
                 'class': 'list-group-item d-flex justify-content-between align-items-center',
-                'html': '<span class="file-name">' + file.name + '</span>' +
-                        '<span class="file-name">' + 'size: ' + fileSize + '</span>'
+                'html': '<span class="file-name col-6">' + file.name + '</span>' +
+                        '<span class="label col-2">' + 'size: '  + '</span>' +
+                        '<span class="size col-2">' + fileSize + '</span>'
 //                        +
 //                        '<button type="button" class="btn btn-outline-danger btn-sm share-btn">' +
 //                            '<i class="bi "></i> Delete' +

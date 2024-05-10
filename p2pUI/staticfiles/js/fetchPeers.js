@@ -10,22 +10,21 @@ function reloadPeers() {
     
     fetch('/get-active-peers/')
         .then(response => {
-            console.log(response);
             if (response.ok) {
                 return response.json();
             }
             throw new Error('Failed to fetch active peers');
         })
         .then(data => {
-            console.log(data);
+            const peers = JSON.parse(data);
+//            console.log(peers);
             peersContent.html('');
-        if (data.active_peers.length !== 0){
-                data.active_peers.forEach(peer => {
-                    console.log(peer)
+        if (data.active_peers !== null){
+                peers.active_peers.forEach(peer => {
                     // Create list item for each peer
                     var listItem = $('<li>', {
                         'class': 'list-group-item d-flex justify-content-between align-items-center',
-                        'html': '<span class="file-name">' + peer.key + '</span>' +
+                        'html': '<span class="file-name">' + peer.address + '</span>' +
                                 '<button type="button" class="btn btn-outline-primary btn-sm share-btn">' +
                                     '<i class="bi bi-eye-fill"></i>' +
                                 '</button>'
@@ -51,4 +50,4 @@ function reloadPeers() {
 // Initial preload
 reloadPeers();
 
-setInterval(reloadPeers, 5000);
+setInterval(reloadPeers, 1000);

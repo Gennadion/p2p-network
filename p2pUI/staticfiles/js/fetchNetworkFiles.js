@@ -5,7 +5,6 @@ function fetchNetworkFiles() {
     info.hide();
     fetch('/get-network-files/')
         .then(response => {
-        console.log(response);
             if (response.ok) {
                 return response.json();
             }
@@ -18,21 +17,23 @@ function fetchNetworkFiles() {
            $.each(data.net_files, function(index, file) {
                 // Create list item for each file
                 var listItem = $('<li>', {
-                    'class': 'list-group-item d-flex justify-content-between align-items-center'
+                    'class': 'list-group-item d-flex justify-content-between align-items-center '
                 });
 
 
                 var fileNameSpan = $('<span>', {
-                    'class': 'file-name',
+                    'class': 'file-name col-10',
                     'text': file.name
                 });
 
 
                 var downloadButton = $('<button>', {
                     'type': 'button',
-                    'class': 'btn btn-outline-primary btn-sm share-btn',
+                    'class': 'col-2 btn btn-outline-primary btn-sm share-btn downloadButton',
                     'html': '<i class="bi bi-download"></i> Get',
-                     'onclick': 'getFile()'
+                     'data-file-hash': file.hash,
+                     'data-file-name': file.name
+
                 });
 
 
@@ -53,4 +54,4 @@ function fetchNetworkFiles() {
 fetchNetworkFiles();
 
 // Fetch network files every 5 seconds
-setInterval(fetchNetworkFiles, 5000);
+setInterval(fetchNetworkFiles, 1000);
