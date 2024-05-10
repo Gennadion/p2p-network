@@ -27,22 +27,6 @@ class FileModel:
         }
 
 
-class Peer:
-    def __init__(self, peer_id, ip_address, port, username):
-        self.peer_id = peer_id
-        self.ip_address = ip_address
-        self.port = port
-        self.username = username
-
-    def to_dict(self):
-        return {
-            "username": self.username,
-            "port": self.port,
-            "ip_address": self.ip_address,
-            "peer_id": self.peer_id
-        }
-
-
 local_files = []
 network_files = []
 active_peers = []
@@ -56,7 +40,7 @@ def update_local_files(node):
         local_files = node.get_local_files()
 
         # Sleep for some time
-        time.sleep(1)
+        time.sleep(3)
 
 
 # Function to continuously update network files
@@ -81,77 +65,90 @@ def update_active_peers(node):
 # helper funcs
 async def get_network_files_async(request):
     global network_files
-    print('prepare to get files on network')
-    # Get the current state of network files (snapshot)
-    # serialized_files = [file for file in network_files]
+    time.sleep(3)
     return JsonResponse(network_files, safe=False)
 
 
 async def get_local_files_async(request):
     global local_files
-    print('prepare to get files on localhost')
-    time.sleep(2)
-    # serialized_files = [file for file in local_files]
-
+    time.sleep(1)
     return JsonResponse(local_files, safe=False)
 
 
 async def get_peers_async(request):
     global active_peers
-    print('prepare to get active peers')
-    # Get the current state of active peers (snapshot)
-    # serialized_peers = [peer for peer in active_peers]
-    return JsonResponse(active_peers, safe=False)
+
+    active_peers_str = []
+    for item in active_peers:
+        if isinstance(item, bytes):
+            item = item.decode('utf-8')
+        active_peers_str.append(item)
+
+    return JsonResponse(active_peers_str, safe=False)
+
+
+
+node_initialized = False
+initialized_node: Node = None
 
 
 def initialize_node():
+    global node_initialized, initialized_node
+    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
+                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
     # alexarlord-boop setup
     shared_folder = '../../Desktop/p2p'
-    local_address = "192.168.96.0"
-    mask = "255.255.224.0"
+    local_address = "172.20.10.0"
+    mask = "255.255.255.240"
     port = 9613
 
     index_file_name = '../../index.json'
     peer_index_file_name = '../../peer_index.json'
 
-    node = Node(
-        local_address,
-        mask,
-        shared_folder,
-        index_file_name,
-        peer_index_file_name,
-        port=port
-    )
+    if not node_initialized:
+        node = Node(
+            local_address,
+            mask,
+            shared_folder,
+            index_file_name,
+            peer_index_file_name,
+            port=port
+        )
+        node.run()
+        node_initialized = True
+        initialized_node = node
 
+        # Create a separate thread for updating local files for each node
+        update_thread1 = threading.Thread(target=update_local_files, args=(node,))
+        update_thread1.daemon = True  # Daemonize the thread, so it stops when the main thread exits
+        update_thread1.start()
 
-    # Create a separate thread for updating local files for each node
-    update_thread = threading.Thread(target=update_local_files, args=(node,))
-    update_thread.daemon = True  # Daemonize the thread, so it stops when the main thread exits
-    update_thread.start()
-
-    # Create a separate thread for updating network files for each node
-    update_thread = threading.Thread(target=update_network_files, args=(node,))
-    update_thread.daemon = True  # Daemonize the thread, so it stops when the main thread exits
-    update_thread.start()
-
-    # Create a separate thread for updating active peers for each node
-    update_thread = threading.Thread(target=update_active_peers, args=(node,))
-    update_thread.daemon = True  # Daemonize the thread, so it stops when the main thread exits
-    update_thread.start()
-
-    node.run_forever()
+        # Create a separate thread for updating network files for each node
+        update_thread2 = threading.Thread(target=update_network_files, args=(node,))
+        update_thread2.daemon = True  # Daemonize the thread, so it stops when the main thread exits
+        update_thread2.start()
+        #
+        # Create a separate thread for updating active peers for each node
+        update_thread3 = threading.Thread(target=update_active_peers, args=(node,))
+        update_thread3.daemon = True  # Daemonize the thread, so it stops when the main thread exits
+        update_thread3.start()
 
 
 async def index(request):
     # Initialize and run the Node in a separate thread
-    node_thread = threading.Thread(target=initialize_node)
-    node_thread.start()
+    # node_thread = threading.Thread(target=initialize_node)
+    # node_thread.start()
 
-    await asyncio.sleep(1)
+    initialize_node()
 
     return render(request, 'base/index.html')
 
 
 async def index_disconnected(request):
-    await asyncio.sleep(1)
+    global node_initialized, initialized_node
+
+    if initialized_node:
+        node_initialized = False
+        initialized_node.stop()
     return render(request, 'base/index_disconnected.html')

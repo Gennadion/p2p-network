@@ -10,6 +10,7 @@ function reloadPeers() {
     
     fetch('/get-active-peers/')
         .then(response => {
+            console.log(response);
             if (response.ok) {
                 return response.json();
             }
@@ -18,10 +19,7 @@ function reloadPeers() {
         .then(data => {
             console.log(data);
             peersContent.html('');
-            if (data.active_peers.length === 0) {
-                console.log('Peer list is empty');
-//                info.show(); // Show info text
-            } else {
+        if (data.active_peers.length !== 0){
                 data.active_peers.forEach(peer => {
                     console.log(peer)
                     // Create list item for each peer
@@ -35,6 +33,7 @@ function reloadPeers() {
                     peersContent.append(listItem);
                 });
             }
+
         })
         .catch(error => {
             console.error('Error:', error);

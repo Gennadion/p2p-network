@@ -5,6 +5,7 @@ function fetchNetworkFiles() {
     info.hide();
     fetch('/get-network-files/')
         .then(response => {
+        console.log(response);
             if (response.ok) {
                 return response.json();
             }
