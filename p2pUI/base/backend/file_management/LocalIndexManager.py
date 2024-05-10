@@ -27,8 +27,9 @@ class LocalIndexManager:
         self.logger.info("Indexing files...")
         for filename in os.listdir(self.shared_folder):
             file_path = os.path.join(self.shared_folder, filename)
-            file_hash = self.generate_file_hash(file_path)
-            self.file_hashes[file_hash] = {'name': filename, 'path': file_path, 'size': os.path.getsize(file_path)}
+            if os.path.isfile(file_path):
+                file_hash = self.generate_file_hash(file_path)
+                self.file_hashes[file_hash] = {'name': filename, 'path': file_path, 'size': os.path.getsize(file_path)}
         self.save_index_to_json()
         self.logger.info("Indexing complete.")
 
