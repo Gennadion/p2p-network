@@ -18,7 +18,9 @@ class Messager:
         self.public = socket(AF_INET, SOCK_DGRAM)
         self.public.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
         self.public.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        print(self.bcast)
         self.public.bind((self.bcast, self.port))
+
             
     def broadcast(self, message):
         logging.info(f"Broadcasting message to {self.bcast}...")
