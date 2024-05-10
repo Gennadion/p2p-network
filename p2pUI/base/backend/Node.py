@@ -6,7 +6,7 @@ from .file_management.PeerIndexer import *
 from .file_management.ChunkProcessor import *
 
 
-def generate_response(files, origin, metadata_keys, main_key):
+def generate_response(files, origin, metadata_keys, main_key, inner_metadata_keys=None):
     response = {origin: []}
     for hsh, metadata in files.items():
         new_elem = {
@@ -15,6 +15,9 @@ def generate_response(files, origin, metadata_keys, main_key):
         }
         for key in metadata_keys:
             new_elem[key] = metadata[key]
+            if inner_metadata_keys and key == "metadata":
+                for inner_key in inner_metadata_keys:
+                    new_elem[inner_key] = metadata[key][inner_key]
         response[origin].append(new_elem)
     return response
 
@@ -185,7 +188,7 @@ class Node:
 
     def get_net_files(self):
         files = self.peer.peer_indexer.get_peer_index()
-        response = generate_response(files, "net_files", ["name", "size", "peers"], "hash")
+        response = generate_response(files, "net_files", ["metadata", "peers"], "hash", ["name", "size"])
         return response
 
     def get_active_peers(self):

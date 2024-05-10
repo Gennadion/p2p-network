@@ -38,26 +38,29 @@ class Peer:
 
     def discover_peers(self):
         while not self.stop_event.is_set():
-            data, addr = self.messager.record()
-            self.logger.info(f"Broadcast message from: {addr}")
-            if data[:10] == self.hello and addr[0] != self.messager.me:
-                if data[10:] == self.messager.pkey:
-                    self.messager.me = addr[0]
-                    self.logger.info(f"I am existing as {self.messager.me}")
-                    continue
-                if addr[0] not in self.peers:
-                    self.logger.info(f"New peer: {addr}")
-                    self.peers[addr[0]] = {
-                        "key": data[10:],
-                        "last_online": time.time()
-                    }
-                    event = {
-                        "action": "new_peer",
-                        "addr": addr[0]
-                    }
-                    self.node.handle_event(event)
-                self.peers[addr[0]]["last_online"] = time.time()
-                self.logger.info(f"Time for peer {addr} updated")
+            try:
+                data, addr = self.messager.record()
+                self.logger.info(f"Broadcast message from: {addr}")
+                if data[:10] == self.hello and addr[0] != self.messager.me:
+                    if data[10:] == self.messager.pkey:
+                        self.messager.me = addr[0]
+                        self.logger.info(f"I am existing as {self.messager.me}")
+                        continue
+                    if addr[0] not in self.peers:
+                        self.logger.info(f"New peer: {addr}")
+                        self.peers[addr[0]] = {
+                            "key": data[10:],
+                            "last_online": time.time()
+                        }
+                        event = {
+                            "action": "new_peer",
+                            "addr": addr[0]
+                        }
+                        self.node.handle_event(event)
+                    self.peers[addr[0]]["last_online"] = time.time()
+                    self.logger.info(f"Time for peer {addr} updated")
+            except Exception as e:
+                self.logger.error(f"Error discovering peers: {e}")
 
     def send_index(self, peer_address, message):
         logging.info(f"Sending index to {peer_address}")
@@ -135,12 +138,15 @@ class Peer:
     def get_message(self):
         while not self.stop_event.is_set():
             if self.messager.me:
-                data, addr = self.messager.receive()
-                if data[:10] in self.message_matcher:
-                    method = self.message_matcher[data[:10]]
-                    method(addr[0], data[10:])
-                    continue
-                logging.error(f"Not recognized message from peer {addr[0]}: {data}")
+                try:
+                    data, addr = self.messager.receive()
+                    if data[:10] in self.message_matcher:
+                        method = self.message_matcher[data[:10]]
+                        method(addr[0], data[10:])
+                        continue
+                    logging.error(f"Not recognized message from peer {addr[0]}: {data}")
+                except Exception as e:
+                    logging.error(f"Error getting message from peer: {e}")
 
     def send_request(self, peer_addr, request):
         if peer_addr in self.peers:
