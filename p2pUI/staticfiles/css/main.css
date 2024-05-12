@@ -1,0 +1,74 @@
+h1, h2, h3, h4, h5, h6, p, a, span, input, .btn {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+.container-input {
+  position: relative;
+}
+
+.input-s {
+  width: 150px;
+  padding: 10px 0px 10px 40px;
+  border-radius: 9999px;
+  border: solid 2px #333;
+  transition: all .2s ease-in-out;
+  outline: none;
+  opacity: 0.8;
+}
+
+.container-input svg  {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  transform: translate(0, -50%);
+}
+
+
+
+.input-s.lg:focus {
+width: 340px;
+  opacity: 1;
+   border: 2px solid #86E823;
+}
+
+.input-s.sm:focus {
+   width: 200px;
+  opacity: 1;
+   border: 2px solid #86E823;
+}
+
+
+.button-p {
+    margin: 2px;
+    background-color: #fff;
+    padding: 10px;
+    border-radius: 9999px;
+    border: solid 2px #333;
+    transition: all .1s ease-in-out;
+    opacity: 1;
+    /* Add box-shadow to extend border outside */
+
+}
+
+.button-p:active {
+    border: 2px solid #86E823;
+    /* Adjust box-shadow for active state */
+
+}
+
+
+
+.preview-list ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.preview-list li {
+    padding: 5px;
+    border-bottom: 1px solid #ccc; /* Add a border between items */
+}
+
+.preview-list li:last-child {
+    border-bottom: none; /* Remove border from last item */
+}

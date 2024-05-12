@@ -1,0 +1,119 @@
+{% extends 'base/master.html' %}
+
+{% block title %} Home | My Website {% endblock %}
+
+{% block content %}
+<div class="row mt-3 p-0 m-0">
+    <!-- FILES SECTION START-->
+    <div class="col-md-7">
+        <nav class="navbar navbar-light rounded-top border border-bottom-0">
+            <div class="container-fluid">
+                <ul class="nav nav-tabs w-50">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#net-files">Network Files</a>
+                    </li>
+                    <li class="nav-item">
+                        <a id="my-files-navtab" class="nav-link" data-bs-toggle="tab" href="#my-files">My Files</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <input id="search-input" class="form-control me-2" type="search" placeholder="Search"
+                           aria-label="Search">
+                </div>
+            </div>
+        </nav>
+
+        <div class="tab-content p-4 ">
+            <div class="tab-pane fade show active" id="net-files">
+                <h5>Network files  <span class="spinner-grow spinner-grow-sm" role="status"></span></h5>
+                <p class="text-muted">All files available on the network.</p>
+
+                <ul id="network-content" class="list-group overflow-auto" style="max-height:60vh;">
+<!--                     <h6 id="netfiles-info" class="">no files on the network</h6>-->
+<!--                     <div id="netfiles-loader" class="spinner-border" style="display:none;" role="status"></div>-->
+                    <div id="net-content"></div>
+                </ul>
+
+            </div>
+            <div class="tab-pane fade" id="my-files">
+                <button type="button" id="reload-files-btn" class="btn btn-sm btn-primary float-end" value="Refresh"
+                    title="Refresh"><i class="bi bi-arrow-clockwise"></i>
+            </button>
+                <h5>My files</h5>
+                <p class="text-muted">Locally available files, shared with others.</p>
+
+                <ul id="user-content" class="list-group  overflow-auto" style="height:50vh;">
+                     <h6 id="myfiles-info" class="">no files on localhost</h6>
+                     <div id="myfiles-loader" class="spinner-border" style="display:none;" role="status"></div>
+                    <div id="my-content"></div>
+                </ul>
+
+            </div>
+        </div>
+    </div>
+    <!-- FILES SECTION END-->
+
+    <!--  PERSONAL SECTION START  -->
+    <div class="col-md-5">
+        <div class="mb-5">
+            <div class="p-4 border rounded">
+<!--                <button type="button" id="reload-peers-btn" class="btn btn-sm btn-primary float-end" value="Refresh"-->
+<!--                        title="Refresh"><i class="bi bi-arrow-clockwise"></i>-->
+<!--                </button>-->
+
+
+                <h5>Active Peers <span class="spinner-grow spinner-grow-sm" role="status"></span></h5>
+                <p class="text-muted">Accessible peers on the network.</p>
+
+                <ul class="list-group text-center  mt-3 overflow-auto" style="max-height:20vh;">
+<!--                    <h6 id="peers-info" class="">no active peers at the moment</h6>-->
+<!--                    <div id="peer-loader" class="spinner-border" style="display:none;" role="status"></div>-->
+                    <div id="peers-content"></div>
+                </ul>
+
+            </div>
+        </div>
+
+        <nav class="navbar navbar-light rounded-top border border-bottom-0">
+            <div class="container-fluid">
+                <ul class="nav nav-tabs w-50">
+<!--                    <li class="nav-item">-->
+<!--                        <a class="nav-link active" data-bs-toggle="tab" href="#share-tab">Sharing</a>-->
+<!--                    </li>-->
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#download-tab">Downloading</a>
+                    </li>
+                </ul>
+                <!--                <div class="d-flex">-->
+                <!--                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">-->
+                <!--                </div>-->
+            </div>
+        </nav>
+        <div class="tab-content p-4">
+<!--            <div class="tab-pane fade show active" id="share-tab">-->
+<!--&lt;!&ndash;                <h5>Share content</h5>&ndash;&gt;-->
+<!--                <p class="text-muted">Content you are currently sharing via p2p network.</p>-->
+<!--                <div id="share-content" class="scrollable-content">-->
+<!--                    <ul class="list-group  overflow-auto" style="height:10vh;">-->
+<!--                        {% for share_item in share_items %}-->
+<!--                        <li class="list-group-item">{{ share_item }}</li>-->
+<!--                        {% endfor %}-->
+<!--                    </ul>-->
+<!--                </div>-->
+<!--            </div>-->
+            <div class="tab-pane fade show active" id="download-tab">
+<!--                <h5>Download Content</h5>-->
+                <p class="text-muted">Content you are currently downloading via p2p network.</p>
+                <div id="download-content" class="scrollable-content">
+<!--                    <ul class="list-group">-->
+<!--                        {% for download_item in download_items %}-->
+<!--                        <li class="list-group-item">{{ download_item }}</li>-->
+<!--                        {% endfor %}-->
+<!--                    </ul>-->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--  PERSONAL SECTION END  -->
+</div>
+{% endblock %}

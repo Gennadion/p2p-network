@@ -1,5 +1,5 @@
 """
-URL configuration for user_interaction project.
+URL configuration for p2pUI project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.0/topics/http/urls/
@@ -16,11 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
-
 from django.contrib import admin
 from django.urls import include, path
 
 urlpatterns = [
-    path("uiapp/", include("uiapp.urls")),
-    path("admin/", admin.site.urls),
+    path("", include("base.urls")),
 ]
