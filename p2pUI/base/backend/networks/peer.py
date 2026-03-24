@@ -174,8 +174,9 @@ class Peer:
 
     def get_file_peers(self, file_hash):
         peers_index = self.peer_indexer.get_peer_index()
-        available_peers = peers_index[file_hash]["peers"]
-        return available_peers
+        if file_hash not in peers_index:
+            return {}
+        return peers_index[file_hash]["peers"]
     
     def get_peer_file(self, file_hash):
         peers_index = self.peer_indexer.get_peer_index()

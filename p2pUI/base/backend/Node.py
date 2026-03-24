@@ -185,6 +185,7 @@ class Node:
             "hash": self.chunk_processor.file_hash,
             "origin": "requested_file"
         })
+        return response
 
     def get_net_files(self):
         files = self.peer.peer_indexer.get_peer_index()

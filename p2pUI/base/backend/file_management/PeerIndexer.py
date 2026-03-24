@@ -10,7 +10,6 @@ class PeerIndexManager:
         self.logger.info("Initializing PeerIndexManager...")
         self.index_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), peer_index_file_name)
         self.peer_file_index = self.load_peer_index()
-        self.file_indexes = {}
 
     def load_peer_index(self):
         self.logger.info("Loading peer index...")
@@ -22,13 +21,12 @@ class PeerIndexManager:
             return {}
 
     def get_peer_index(self):
-        index_file = self.load_peer_index()
-        return index_file
+        return self.peer_file_index
 
     def save_peer_index(self):
         self.logger.info("Saving peer index...")
         with open(self.index_file, 'w') as f:
-            json.dump(self.file_indexes, f, indent=4)
+            json.dump(self.peer_file_index, f, indent=4)
         self.logger.info("Peer index saved.")
 
     def add_file_index(self, file_hash, file_metadata, peer_address):
@@ -36,7 +34,6 @@ class PeerIndexManager:
         if file_hash not in self.peer_file_index:
             self.peer_file_index[file_hash] = {"metadata": file_metadata, "peers": {}}
         self.peer_file_index[file_hash]["peers"][peer_address] = {"last_update": time.time()}
-        self.file_indexes = self.peer_file_index
         self.save_peer_index()
         self.logger.info(f"File index for {file_hash} added from peer {peer_address}.")
 
@@ -86,6 +83,6 @@ class PeerIndexManager:
 
     def clear_peer_index(self):
         self.logger.info("Clearing peer index...")
-        self.file_indexes = {}
+        self.peer_file_index = {}
         self.save_peer_index()
         self.logger.info("Peer index cleared.")

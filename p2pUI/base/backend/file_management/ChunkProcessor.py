@@ -41,10 +41,10 @@ class ChunkProcessor:
             logging.error(f"Failed to download chunk {i} after {self.max_attempts} attempts.")
             return False
         available_peers = set(self.peers_with_file.keys()) - self.chunk_attempts[i]
-        chosen_peer = random.choice(list(available_peers))
         if not available_peers:
             logging.info(f"No available peers left to try for chunk {i}.")
             return False
+        chosen_peer = random.choice(list(available_peers))
         event = {
             "action": "request_chunk",
             "peer_address": chosen_peer,
