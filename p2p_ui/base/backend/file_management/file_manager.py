@@ -1,4 +1,4 @@
-from .Overwatcher import *
+from .overwatcher import *
 import logging
 import os
 
@@ -24,8 +24,6 @@ def format_update(keyword, file_hash, metadata=None):
 
 
 class FileManager:
-    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def __init__(self, node, shared_folder, local_indexer=None):
         self.node = node
@@ -59,10 +57,20 @@ class FileManager:
 
     def save_file(self, file_name, data):
         try:
-            file_path = os.path.join(self.shared_folder, file_name)
-            with open(file_path, 'wb') as f:
+            safe_name = os.path.basename(file_name)
+            file_path = os.path.join(self.shared_folder, safe_name)
+            real_file = os.path.realpath(file_path)
+            real_folder = os.path.realpath(self.shared_folder)
+            try:
+                if os.path.commonpath([real_file, real_folder]) != real_folder:
+                    logging.error(f"Rejected path traversal attempt: {file_name}")
+                    return
+            except ValueError:
+                logging.error(f"Rejected path traversal attempt due to invalid path: {file_name}")
+                return
+            with open(real_file, 'wb') as f:
                 f.write(data)
-            logging.info(f"File saved successfully: {file_name}")
+            logging.info(f"File saved successfully: {safe_name}")
         except Exception as e:
             logging.error(f"Error saving file: {e}")
 

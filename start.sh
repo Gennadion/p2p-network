@@ -12,7 +12,7 @@ fi
 # Loop to start n peers
 for ((i = 1; i <= n; i++)); do
     # Run docker container for peer$i
-    docker run --name peer$i -p 800$i:8000 -v /Users/rert0/Desktop/p2p:/p2pUI/base/shared -d peer
+    docker run --name peer$i -p 800$i:8000 -v /Users/rert0/Desktop/p2p:/p2p_ui/base/shared -d peer
     echo "Started peer$i"
 done
 

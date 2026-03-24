@@ -16,7 +16,7 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
-python ./p2pUI/manage.py runserver
+python ./p2p_ui/manage.py runserver
 ```
 
 ## Features
