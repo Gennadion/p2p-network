@@ -63,6 +63,8 @@ def update_active_peers(node):
 
 initialized_node: Node = None
 init_lock = threading.Lock()  # Lock for thread safety during initialization
+_initializing = False          # Sentinel: a thread is mid-initialization
+_download_lock = threading.Lock()  # At most one file download at a time
 
 
 # helper funcs
@@ -81,6 +83,12 @@ async def get_file_async(request, file_hash, file_name):
         except ValueError:
             pass
         return HttpResponse("Node is not initialized.")
+    if not _download_lock.acquire(blocking=False):
+        try:
+            downloading_files.remove(file_name)
+        except ValueError:
+            pass
+        return HttpResponse("Another download is already in progress.")
     try:
         event = {"file_hash": file_hash}
         await asyncio.to_thread(initialized_node.request_file, event=event)
@@ -88,6 +96,7 @@ async def get_file_async(request, file_hash, file_name):
     except Exception:
         return HttpResponse(file_name + " download failed")
     finally:
+        _download_lock.release()
         try:
             downloading_files.remove(file_name)
         except ValueError:
@@ -124,53 +133,55 @@ async def get_peers_async(request):
     except (TypeError, AttributeError):
         result = peers_snapshot
     await asyncio.sleep(1)
-    return JsonResponse(json.dumps(result), safe=False)
+    return JsonResponse(result, safe=False)
 
 
 def initialize_node():
-    global initialized_node
+    global initialized_node, _initializing
     with init_lock:
-        if initialized_node is not None:
+        if initialized_node is not None or _initializing:
             return
-    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        _initializing = True
+    try:
+        logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
+                            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    # alexarlord-boop setup
-    shared_folder = '../../Desktop/p2p'
-    local_address = "172.20.10.0"
-    mask = "255.255.255.240"
-    port = 9613
+        # alexarlord-boop setup
+        shared_folder = '../../Desktop/p2p'
+        local_address = "172.20.10.0"
+        mask = "255.255.255.240"
+        port = 9613
 
-    index_file_name = '../../index.json'
-    peer_index_file_name = '../../peer_index.json'
+        index_file_name = '../../index.json'
+        peer_index_file_name = '../../peer_index.json'
 
-    node = Node(
-        local_address,
-        mask,
-        shared_folder,
-        index_file_name,
-        peer_index_file_name,
-        port=port
-    )
-    node.run()
+        node = Node(
+            local_address,
+            mask,
+            shared_folder,
+            index_file_name,
+            peer_index_file_name,
+            port=port
+        )
+        node.run()
 
-    with init_lock:
-        initialized_node = node
+        with init_lock:
+            initialized_node = node
 
-    # Create a separate thread for updating local files for each node
-    update_thread1 = threading.Thread(target=update_local_files, args=(node,))
-    update_thread1.daemon = True  # Daemonize the thread, so it stops when the main thread exits
-    update_thread1.start()
+        update_thread1 = threading.Thread(target=update_local_files, args=(node,))
+        update_thread1.daemon = True
+        update_thread1.start()
 
-    # Create a separate thread for updating network files for each node
-    update_thread2 = threading.Thread(target=update_network_files, args=(node,))
-    update_thread2.daemon = True  # Daemonize the thread, so it stops when the main thread exits
-    update_thread2.start()
-    #
-    # Create a separate thread for updating active peers for each node
-    update_thread3 = threading.Thread(target=update_active_peers, args=(node,))
-    update_thread3.daemon = True  # Daemonize the thread, so it stops when the main thread exits
-    update_thread3.start()
+        update_thread2 = threading.Thread(target=update_network_files, args=(node,))
+        update_thread2.daemon = True
+        update_thread2.start()
+
+        update_thread3 = threading.Thread(target=update_active_peers, args=(node,))
+        update_thread3.daemon = True
+        update_thread3.start()
+    finally:
+        with init_lock:
+            _initializing = False
 
 
 async def index(request):

@@ -59,10 +59,16 @@ class FileManager:
         try:
             safe_name = os.path.basename(file_name)
             file_path = os.path.join(self.shared_folder, safe_name)
-            if not os.path.realpath(file_path).startswith(os.path.realpath(self.shared_folder)):
-                logging.error(f"Rejected path traversal attempt: {file_name}")
+            real_file = os.path.realpath(file_path)
+            real_folder = os.path.realpath(self.shared_folder)
+            try:
+                if os.path.commonpath([real_file, real_folder]) != real_folder:
+                    logging.error(f"Rejected path traversal attempt: {file_name}")
+                    return
+            except ValueError:
+                logging.error(f"Rejected path traversal attempt due to invalid path: {file_name}")
                 return
-            with open(file_path, 'wb') as f:
+            with open(real_file, 'wb') as f:
                 f.write(data)
             logging.info(f"File saved successfully: {safe_name}")
         except Exception as e:

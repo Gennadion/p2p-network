@@ -26,9 +26,11 @@ class DirectoryMonitor:
             if not event.is_directory:
                 logging.info(f"File created: {event.src_path}. Waiting for write to complete.")
                 try:
-                    # Poll until file size stops changing, so we don't hash a partially written file
+                    # Poll until file size stops changing, so we don't hash a partially written file.
+                    # Cap at 60 attempts (30 s) so the watchdog thread is never blocked indefinitely.
+                    MAX_POLLS = 60
                     prev_size = -1
-                    while True:
+                    for _ in range(MAX_POLLS):
                         try:
                             current_size = os.path.getsize(event.src_path)
                         except OSError:
@@ -37,6 +39,10 @@ class DirectoryMonitor:
                             break
                         prev_size = current_size
                         time.sleep(0.5)
+                    else:
+                        logging.warning(
+                            f"File still growing after {MAX_POLLS} polls, indexing anyway: {event.src_path}"
+                        )
                     self.file_manager.share_file_index(event.src_path)
                     logging.info(f"Successfully shared file index for: {event.src_path}")
                 except Exception as e:
