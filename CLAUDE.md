@@ -9,10 +9,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pip install -r requirements.txt
 
 # Run the Django web UI (primary interface)
-python p2pUI/manage.py runserver
+python p2p_ui/manage.py runserver
 
 # Run headless node (no UI)
-cd p2pUI/base/backend && python main.py
+cd p2p_ui/base/backend && python main.py
 
 # Docker: build and start n peers
 docker build -t peer .
@@ -25,9 +25,9 @@ There is no test suite.
 
 ## Architecture
 
-The project has two layers: a **Django web UI** (`p2pUI/`) and a **P2P networking backend** (`p2pUI/base/backend/`). The root-level `main.py`, `networks/`, and `file_management/` directories are an older CLI prototype and are not used by the web app.
+The project has two layers: a **Django web UI** (`p2p_ui/`) and a **P2P networking backend** (`p2p_ui/base/backend/`). The root-level `main.py`, `networks/`, and `file_management/` directories are an older CLI prototype and are not used by the web app.
 
-### Core backend (`p2pUI/base/backend/`)
+### Core backend (`p2p_ui/base/backend/`)
 
 **`Node`** (`Node.py`) is the central coordinator. It owns all subsystems and routes events through `handle_event(event)` using a string-keyed `event_dictionary`. All inter-component communication goes through this event bus rather than direct calls.
 
@@ -49,7 +49,7 @@ The project has two layers: a **Django web UI** (`p2pUI/`) and a **P2P networkin
 
 **`DirectoryMonitor`** (`file_management/Overwatcher.py`) uses `watchdog` to watch the shared folder; triggers `share_file_index`/`unshare_file_index` on changes.
 
-### Django layer (`p2pUI/base/`)
+### Django layer (`p2p_ui/base/`)
 
 `views.py` initializes `Node` in a background thread on the first request to `/connect/`. Three additional daemon threads poll `Node` every 1s to update module-level globals (`local_files`, `network_files`, `active_peers`). Async views serve these globals as JSON.
 
@@ -73,4 +73,4 @@ Messages are prefixed with a fixed 10-byte identifier:
 
 ### Configuration
 
-Before running, the network settings must be hardcoded in `p2pUI/base/views.py` → `initialize_node()`: `local_address`, `mask`, `shared_folder`, `port` (default 9613). The Docker setup mounts `/Users/rert0/Desktop/p2p` as the shared folder (update `start.sh` for your path).
+Before running, the network settings must be hardcoded in `p2p_ui/base/views.py` → `initialize_node()`: `local_address`, `mask`, `shared_folder`, `port` (default 9613). The Docker setup mounts `/Users/rert0/Desktop/p2p` as the shared folder (update `start.sh` for your path).
