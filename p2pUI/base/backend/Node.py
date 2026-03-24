@@ -23,8 +23,6 @@ def generate_response(files, origin, metadata_keys, main_key, inner_metadata_key
 
 
 class Node:
-    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def __init__(self,
                  addr,

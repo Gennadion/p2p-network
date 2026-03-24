@@ -1,11 +1,11 @@
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import logging
+import os
+import time
 
 
 class DirectoryMonitor:
-    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def __init__(self, shared_folder, local_indexer, file_manager):
         self.logger = logging.getLogger(__name__)
@@ -24,8 +24,19 @@ class DirectoryMonitor:
 
         def on_created(self, event):
             if not event.is_directory:
-                logging.info(f"File created: {event.src_path}. Indexing and notifying peers.")
+                logging.info(f"File created: {event.src_path}. Waiting for write to complete.")
                 try:
+                    # Poll until file size stops changing, so we don't hash a partially written file
+                    prev_size = -1
+                    while True:
+                        try:
+                            current_size = os.path.getsize(event.src_path)
+                        except OSError:
+                            return
+                        if current_size == prev_size:
+                            break
+                        prev_size = current_size
+                        time.sleep(0.5)
                     self.file_manager.share_file_index(event.src_path)
                     logging.info(f"Successfully shared file index for: {event.src_path}")
                 except Exception as e:

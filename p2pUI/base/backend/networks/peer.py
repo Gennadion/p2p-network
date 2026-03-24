@@ -7,8 +7,6 @@ from .messager import Messager
 
 
 class Peer:
-    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def __init__(self, node, addr, mask, peer_indexer, port=9613, me=None):
         self.node = node

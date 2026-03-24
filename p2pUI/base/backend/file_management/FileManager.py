@@ -24,8 +24,6 @@ def format_update(keyword, file_hash, metadata=None):
 
 
 class FileManager:
-    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def __init__(self, node, shared_folder, local_indexer=None):
         self.node = node
@@ -59,10 +57,14 @@ class FileManager:
 
     def save_file(self, file_name, data):
         try:
-            file_path = os.path.join(self.shared_folder, file_name)
+            safe_name = os.path.basename(file_name)
+            file_path = os.path.join(self.shared_folder, safe_name)
+            if not os.path.realpath(file_path).startswith(os.path.realpath(self.shared_folder)):
+                logging.error(f"Rejected path traversal attempt: {file_name}")
+                return
             with open(file_path, 'wb') as f:
                 f.write(data)
-            logging.info(f"File saved successfully: {file_name}")
+            logging.info(f"File saved successfully: {safe_name}")
         except Exception as e:
             logging.error(f"Error saving file: {e}")
 

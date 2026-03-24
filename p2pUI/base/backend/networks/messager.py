@@ -4,7 +4,6 @@ from .encryption import create_key
 
 
 class Messager:
-    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def __init__(self, addr, mask, port=9613, me=None):
         self.logger = logging.getLogger(__name__)

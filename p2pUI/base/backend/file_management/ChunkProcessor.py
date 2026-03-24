@@ -7,8 +7,6 @@ CHUNK_SIZE = 1024
 
 
 class ChunkProcessor:
-    logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
-                        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
     def __init__(self, node, file_hash, selected_file):
         self.name = selected_file["name"]

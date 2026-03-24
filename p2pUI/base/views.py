@@ -1,8 +1,8 @@
 import asyncio
 import json
+import logging
 import threading
 import time
-import logging
 
 from .backend.Node import Node
 
@@ -76,14 +76,13 @@ async def get_file_async(request, file_hash, file_name):
     if file_name not in downloading_files:
         downloading_files.append(file_name)
     if initialized_node is not None:
-        with init_lock:
-            try:
-                event = {"file_hash": file_hash}
-                initialized_node.request_file(event=event)
-                downloading_files.remove(file_name)
-                return HttpResponse(file_name + " is saved and verified")
-            except Exception as e:
-                return HttpResponse(file_name + " download failed")
+        try:
+            event = {"file_hash": file_hash}
+            await asyncio.to_thread(initialized_node.request_file, event=event)
+            downloading_files.remove(file_name)
+            return HttpResponse(file_name + " is saved and verified")
+        except Exception as e:
+            return HttpResponse(file_name + " download failed")
     else:
         return HttpResponse("Node is not initialized.")
 
@@ -97,33 +96,35 @@ async def get_file_async(request, file_hash, file_name):
 
 
 async def get_network_files_async(request):
-    global network_files
-    time.sleep(1)
-
+    await asyncio.sleep(1)
     return JsonResponse(network_files, safe=False)
 
 
 async def get_local_files_async(request):
-    global local_files
-    time.sleep(2)
+    await asyncio.sleep(2)
     return JsonResponse(local_files, safe=False)
 
 
 async def get_peers_async(request):
-    global active_peers
+    peers_snapshot = active_peers
     try:
-        # Convert bytes data to string representation
-        for peer in active_peers['active_peers']:
-            peer['key'] = peer['key'].decode('utf-8') if isinstance(peer['key'], bytes) else str(peer['key'])
-    except TypeError:
-        pass
-    serialized_peers = json.dumps(active_peers)
-    time.sleep(1)
-    return JsonResponse(serialized_peers, safe=False)
+        result = {
+            'active_peers': [
+                {**peer, 'key': peer['key'].decode('utf-8') if isinstance(peer['key'], bytes) else str(peer['key'])}
+                for peer in peers_snapshot.get('active_peers', [])
+            ]
+        }
+    except (TypeError, AttributeError):
+        result = peers_snapshot
+    await asyncio.sleep(1)
+    return JsonResponse(json.dumps(result), safe=False)
 
 
 def initialize_node():
     global initialized_node
+    with init_lock:
+        if initialized_node is not None:
+            return
     logging.basicConfig(filename="std.log", filemode="a", level=logging.DEBUG,
                         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
@@ -146,7 +147,8 @@ def initialize_node():
     )
     node.run()
 
-    initialized_node = node
+    with init_lock:
+        initialized_node = node
 
     # Create a separate thread for updating local files for each node
     update_thread1 = threading.Thread(target=update_local_files, args=(node,))
