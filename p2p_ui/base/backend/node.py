@@ -45,6 +45,7 @@ class Node:
         self.file_manager = FileManager(self, shared_folder, local_indexer)
 
         self.chunk_processor = None
+        self._download_lock = threading.Lock()
 
         jobs = [
             self.peer.start,
@@ -121,7 +122,10 @@ class Node:
         self.chunk_processor.handle_chunk(chunk_info)
 
     def request_file(self, event):
-        if self.chunk_processor is None:
+        if not self._download_lock.acquire(blocking=False):
+            self.logger.info(f"Requested {event} while downloading other file")
+            return
+        try:
             self.logger.info(f"Requesting file: {event['file_hash']}")
             file_hash = event["file_hash"]
             selected_file = self.peer.get_peer_file(file_hash)
@@ -133,15 +137,13 @@ class Node:
                 result = self.chunk_processor.download_and_verify_file()
                 if result:
                     self.logger.info(f"Saved and verified file {file_hash}")
-                    self.chunk_processor = None
                     return
                 self.logger.error(f"Error downloading file with hash {file_hash}.")
-                self.chunk_processor = None
                 return
             self.logger.error(f"File with hash {file_hash} not found in peer index.")
+        finally:
             self.chunk_processor = None
-        else:
-            self.logger.info(f"Requested {event} while downloading other file")
+            self._download_lock.release()
 
     def save_file(self, event):
         self.file_manager.save_file(event["name"], event["data"])
