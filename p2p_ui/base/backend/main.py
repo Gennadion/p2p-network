@@ -1,5 +1,5 @@
 import logging
-from Node import Node
+from node import Node
 
 
 def main():

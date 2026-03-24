@@ -51,7 +51,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'p2pUI.urls'
+ROOT_URLCONF = 'p2p_ui.urls'
 
 TEMPLATES = [
     {
@@ -69,7 +69,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'p2pUI.wsgi.application'
+WSGI_APPLICATION = 'p2p_ui.wsgi.application'
 
 
 # Database

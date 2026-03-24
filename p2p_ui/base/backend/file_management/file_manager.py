@@ -1,4 +1,4 @@
-from .Overwatcher import *
+from .overwatcher import *
 import logging
 import os
 

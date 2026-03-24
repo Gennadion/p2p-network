@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 
-from .backend.Node import Node
+from .backend.node import Node
 
 from django.shortcuts import render
 
