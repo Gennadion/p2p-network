@@ -75,16 +75,23 @@ async def get_file_async(request, file_hash, file_name):
     global downloading_files
     if file_name not in downloading_files:
         downloading_files.append(file_name)
-    if initialized_node is not None:
+    if initialized_node is None:
         try:
-            event = {"file_hash": file_hash}
-            await asyncio.to_thread(initialized_node.request_file, event=event)
             downloading_files.remove(file_name)
-            return HttpResponse(file_name + " is saved and verified")
-        except Exception as e:
-            return HttpResponse(file_name + " download failed")
-    else:
+        except ValueError:
+            pass
         return HttpResponse("Node is not initialized.")
+    try:
+        event = {"file_hash": file_hash}
+        await asyncio.to_thread(initialized_node.request_file, event=event)
+        return HttpResponse(file_name + " is saved and verified")
+    except Exception:
+        return HttpResponse(file_name + " download failed")
+    finally:
+        try:
+            downloading_files.remove(file_name)
+        except ValueError:
+            pass
 
 
 # async def get_download_status_async(request):
