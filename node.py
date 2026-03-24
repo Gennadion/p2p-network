@@ -1,9 +1,9 @@
 import threading
-from ..backend.networks.peer import Peer
-from .file_management.file_manager import FileManager
-from .file_management.local_index_manager import *
-from .file_management.peer_indexer import *
-from .file_management.chunk_processor import *
+from networks.peer import Peer
+from file_management.file_manager import FileManager
+from file_management.local_index_manager import *
+from file_management.peer_indexer import *
+from file_management.chunk_processor import *
 
 
 def generate_response(files, origin, metadata_keys, main_key, inner_metadata_keys=None):
