@@ -1,10 +1,13 @@
 import asyncio
 import json
 import logging
+import os
+import sys
 import threading
 import time
 
-from .backend.node import Node
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from node import Node
 
 from django.shortcuts import render
 

@@ -21,18 +21,22 @@ import json
 import os
 import shutil
 import struct
+import sys
 import tempfile
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from django.test import TestCase
 
-from .backend.file_management.chunk_processor import CHUNK_SIZE, ChunkProcessor
-from .backend.file_management.file_manager import FileManager, create_update_message
-from .backend.file_management.local_index_manager import LocalIndexManager
-from .backend.file_management.peer_indexer import PeerIndexManager
-from .backend.node import Node, generate_response
-from .backend.networks.peer import Peer
+# Add project root to path so root-level packages (node, file_management, networks) are importable
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from file_management.chunk_processor import CHUNK_SIZE, ChunkProcessor
+from file_management.file_manager import FileManager, create_update_message
+from file_management.local_index_manager import LocalIndexManager
+from file_management.peer_indexer import PeerIndexManager
+from node import Node, generate_response
+from networks.peer import Peer
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -467,7 +471,7 @@ class FileManagerTests(TestCase):
         self.shared_dir = tempfile.mkdtemp()
         self.mock_node = MagicMock()
         self.mock_indexer = MagicMock()
-        with patch("base.backend.file_management.FileManager.DirectoryMonitor"):
+        with patch("file_management.file_manager.DirectoryMonitor"):
             self.fm = FileManager(self.mock_node, self.shared_dir, self.mock_indexer)
 
     def tearDown(self):
@@ -614,10 +618,10 @@ class NodeEventRoutingTests(TestCase):
 
     def _make_node(self):
         with (
-            patch("base.backend.Node.Peer"),
-            patch("base.backend.Node.FileManager"),
-            patch("base.backend.Node.LocalIndexManager"),
-            patch("base.backend.Node.PeerIndexManager"),
+            patch("node.Peer"),
+            patch("node.FileManager"),
+            patch("node.LocalIndexManager"),
+            patch("node.PeerIndexManager"),
         ):
             node = Node(addr="192.168.1.1", mask="255.255.255.0", shared_folder="/tmp")
         return node
@@ -700,7 +704,7 @@ class PeerMessageParsingTests(TestCase):
     def _make_peer(self):
         mock_node = MagicMock()
         mock_indexer = MagicMock()
-        with patch("base.backend.networks.peer.Messager") as MockMsg:
+        with patch("networks.peer.Messager") as MockMsg:
             MockMsg.return_value.pkey = b"fake_public_key"
             p = Peer(
                 mock_node, "192.168.1.1", "255.255.255.0",
